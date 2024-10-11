@@ -1,0 +1,9 @@
+name: PreyCapture2
+channels:
+- conda-forge
+dependencies:
+- python == 3.8
+- pip
+- ipython
+- pip:
+  - git+https://github.com/ElTinmar/tracker.git@structured_array_output
