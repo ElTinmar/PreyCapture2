@@ -5,5 +5,7 @@ dependencies:
 - python == 3.8
 - pip
 - ipython
+- pyqt 
+- pandas
 - pip:
   - git+https://github.com/ElTinmar/tracker.git@structured_array_output
