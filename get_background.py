@@ -1,13 +1,13 @@
 from pathlib import Path
 from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity, StaticBackground
 import numpy as np
-from config import resultfolder
+from config import resultfolder, n_background_samples
 import cv2
 from functools import partial
 
-background_subtracter = partial(StaticBackground, polarity=Polarity.DARK_ON_BRIGHT, num_sample_frames = 200)
+background_subtracter = partial(StaticBackground, polarity=Polarity.DARK_ON_BRIGHT, num_sample_frames = n_background_samples)
 
-for p in resultfolder.rglob("*fish[1-2].avi"):
+for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
 
     print(p)
 

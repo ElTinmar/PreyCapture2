@@ -6,7 +6,7 @@
     "animal_tracking": {
         "pix_per_mm": 60.0, 
         "target_pix_per_mm": 5.0, 
-        "animal_intensity": 0.2, 
+        "animal_intensity": 0.25, 
         "animal_brightness": 0.0, 
         "animal_gamma": 0.9999999999999999, 
         "animal_contrast": 1.4500000000000017, 
@@ -26,7 +26,7 @@
     {
         "pix_per_mm": 60.0, 
         "target_pix_per_mm": 7.5, 
-        "body_intensity": 0.19999999999999996, 
+        "body_intensity": 0.25, 
         "body_brightness": 0.0, 
         "body_gamma": 0.8, 
         "body_contrast": 3.0,

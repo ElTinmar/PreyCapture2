@@ -24,7 +24,7 @@ with open('tracking_paramecia.json', 'r') as fp:
 
 settings = settings_fish
 
-for p in resultfolder.rglob("*fish[1-2].avi"):
+for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
 
     print(p)
 
@@ -33,6 +33,7 @@ for p in resultfolder.rglob("*fish[1-2].avi"):
         filename = p, 
         safe = False
     )
+    
     height = video_reader.get_height()
     width = video_reader.get_width()
     fps = video_reader.get_fps()  

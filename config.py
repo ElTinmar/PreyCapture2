@@ -10,3 +10,5 @@ basefolder = Path(folder_map[platform.node()])
 datafolder =  basefolder / 'data'
 resultfolder = basefolder / 'processed'
 display = True
+n_chunks = 5
+n_background_samples = 50
