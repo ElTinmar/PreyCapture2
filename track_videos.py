@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity
+from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity, BackroundImage
 from image_tools import im2single, im2gray
 from tracker import (
-    GridAssignment,
+    GridAssignment, LinearSumAssignment,
     MultiFishTracker_CPU, MultiFishOverlay_opencv, MultiFishTrackerParamTracking, MultiFishTrackerParamOverlay,
     AnimalTracker_CPU, AnimalOverlay_opencv, AnimalTrackerParamTracking, AnimalTrackerParamOverlay,
     BodyTracker_CPU, BodyOverlay_opencv, BodyTrackerParamTracking, BodyTrackerParamOverlay,
@@ -14,12 +14,9 @@ from tqdm import tqdm
 import numpy as np
 import json
 import cv2
+from config import resultfolder
 
 DISPLAY = True
-
-basefolder = Path('/media/martin/MARTIN_8TB_0/Work/Sumbre_New/Mecp2')   
-datafolder =  basefolder / 'data'
-resultfolder = basefolder / 'processed'
 
 with open('tracking_fish.json', 'r') as fp:
     settings_fish = json.load(fp)
@@ -29,7 +26,7 @@ with open('tracking_paramecia.json', 'r') as fp:
 
 settings = settings_fish
 
-for p in resultfolder.rglob("*.avi"):
+for p in resultfolder.rglob("*fish[1-2].avi"):
 
     video_reader = OpenCV_VideoReader()
     video_reader.open_file(
@@ -41,11 +38,9 @@ for p in resultfolder.rglob("*.avi"):
     fps = video_reader.get_fps()  
     num_frames = video_reader.get_number_of_frame()
 
-    background = InpaintBackground(polarity=Polarity.DARK_ON_BRIGHT, video_reader=video_reader)
+    background = BackroundImage(resultfolder / p.stem + '.npy')
     background.initialize()
 
-    video_reader.reset_reader()
-    
     LUT = np.zeros((height, width))
     assignment = GridAssignment(LUT)
 

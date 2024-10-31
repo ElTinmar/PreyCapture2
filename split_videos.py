@@ -1,9 +1,5 @@
 from video_tools import CPU_VideoProcessor
-from pathlib import Path
-
-basefolder = Path('/media/martin/MARTIN_8TB_0/Work/Sumbre_New/Mecp2')   
-datafolder =  basefolder / 'data'
-resultfolder = basefolder / 'processed'
+from config import datafolder, resultfolder
 
 for p in datafolder.rglob("*.avi"):
     print(p)
