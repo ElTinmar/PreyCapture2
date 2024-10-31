@@ -9,3 +9,4 @@ folder_map = {
 basefolder = Path(folder_map[platform.node()])   
 datafolder =  basefolder / 'data'
 resultfolder = basefolder / 'processed'
+display = True

@@ -14,9 +14,7 @@ from tqdm import tqdm
 import numpy as np
 import json
 import cv2
-from config import resultfolder
-
-DISPLAY = True
+from config import resultfolder, display
 
 with open('tracking_fish.json', 'r') as fp:
     settings_fish = json.load(fp)
@@ -28,6 +26,8 @@ settings = settings_fish
 
 for p in resultfolder.rglob("*fish[1-2].avi"):
 
+    print(p)
+
     video_reader = OpenCV_VideoReader()
     video_reader.open_file(
         filename = p, 
@@ -38,7 +38,7 @@ for p in resultfolder.rglob("*fish[1-2].avi"):
     fps = video_reader.get_fps()  
     num_frames = video_reader.get_number_of_frame()
 
-    background = BackroundImage(resultfolder / p.stem + '.npy')
+    background = BackroundImage(p.with_suffix('.npy'), polarity=Polarity.DARK_ON_BRIGHT)
     background.initialize()
 
     LUT = np.zeros((height, width))
@@ -96,7 +96,7 @@ for p in resultfolder.rglob("*fish[1-2].avi"):
         # TODO save tracking to file
 
         # display tracking
-        if DISPLAY:
+        if display:
             oly = overlay.overlay(tracking['animals']['image_fullres'], tracking)
             r = cv2.resize(oly,(512, 512))
             cv2.imshow('overlay',r)
