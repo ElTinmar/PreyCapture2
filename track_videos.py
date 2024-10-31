@@ -21,8 +21,13 @@ basefolder = Path('/media/martin/MARTIN_8TB_0/Work/Sumbre_New/Mecp2')
 datafolder =  basefolder / 'data'
 resultfolder = basefolder / 'processed'
 
-with open('tracking.json', 'r') as fp:
-    settings = json.load(fp)
+with open('tracking_fish.json', 'r') as fp:
+    settings_fish = json.load(fp)
+
+with open('tracking_paramecia.json', 'r') as fp:
+    settings_paramecia = json.load(fp)
+
+settings = settings_fish
 
 for p in resultfolder.rglob("*.avi"):
 
@@ -51,14 +56,14 @@ for p in resultfolder.rglob("*.avi"):
             source_image_shape = (height, width)
         )
     )
-    body_tracker = BodyTracker_CPU(BodyTrackerParamTracking(**settings['body_tracking']))
-    eyes_tracker = EyesTracker_CPU(EyesTrackerParamTracking(**settings['eyes_tracking']))
-    tail_tracker = TailTracker_CPU(TailTrackerParamTracking(**settings['tail_tracking']))
+    body_tracker = BodyTracker_CPU(BodyTrackerParamTracking(**settings['body_tracking'])) if settings['body'] else None
+    eyes_tracker = EyesTracker_CPU(EyesTrackerParamTracking(**settings['eyes_tracking'])) if settings['eyes'] else None
+    tail_tracker = TailTracker_CPU(TailTrackerParamTracking(**settings['tail_tracking'])) if settings['tail'] else None
 
     animal_overlay = AnimalOverlay_opencv(AnimalTrackerParamOverlay())
-    body_overlay = BodyOverlay_opencv(BodyTrackerParamOverlay())
-    eyes_overlay = EyesOverlay_opencv(EyesTrackerParamOverlay())
-    tail_overlay = TailOverlay_opencv(TailTrackerParamOverlay())
+    body_overlay = BodyOverlay_opencv(BodyTrackerParamOverlay()) if settings['body'] else None
+    eyes_overlay = EyesOverlay_opencv(EyesTrackerParamOverlay()) if settings['eyes'] else None
+    tail_overlay = TailOverlay_opencv(TailTrackerParamOverlay()) if settings['tail'] else None
 
     tracker = MultiFishTracker_CPU(
         MultiFishTrackerParamTracking(
