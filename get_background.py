@@ -4,8 +4,11 @@ import numpy as np
 from config import resultfolder, n_background_samples
 import cv2
 from functools import partial
+from image_tools import polymask
 
 background_subtracter = partial(StaticBackground, polarity=Polarity.DARK_ON_BRIGHT, num_sample_frames = n_background_samples)
+
+# TODO make a clone tool to manually paint 
 
 for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
 
@@ -27,6 +30,10 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
         background = background_subtracter(video_reader=video_reader)
         background.initialize()
         img = background.get_background_image()
+
+        mask = polymask(img)
+        img = cv2.inpaint(img, mask, 10, cv2.INPAINT_NS)
+
         cv2.imshow('background', img)
         if cv2.waitKey(0) == ord('y'):
             ok = True
