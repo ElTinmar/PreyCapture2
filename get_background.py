@@ -4,11 +4,28 @@ import numpy as np
 from config import resultfolder, n_background_samples
 import cv2
 from functools import partial
-from image_tools import polymask
+from image_tools import polymask, CloneTool
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QDialog
 
-background_subtracter = partial(StaticBackground, polarity=Polarity.DARK_ON_BRIGHT, num_sample_frames = n_background_samples)
+background_subtracter = partial(
+    StaticBackground, 
+    polarity=Polarity.DARK_ON_BRIGHT, 
+    num_sample_frames = n_background_samples
+)
 
-# TODO make a clone tool to manually paint 
+class CloneDialog(QDialog):
+    '''wrapper class around CloneTool to be able to run in a loop'''
+    
+    def __init__(self, img):
+        super().__init__()
+        self.clone = CloneTool(img)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.clone)
+
+    def get_image(self):
+        return self.clone.get_image()
+
+app = QApplication([])
 
 for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
 
@@ -24,19 +41,16 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
     fps = video_reader.get_fps()  
     num_frames = video_reader.get_number_of_frame()
 
-    ok = False
-    
-    while not ok: 
-        background = background_subtracter(video_reader=video_reader)
-        background.initialize()
-        img = background.get_background_image()
+    background = background_subtracter(video_reader=video_reader)
+    background.initialize()
+    img = background.get_background_image()
 
-        mask = polymask(img)
-        img = cv2.inpaint(img, mask, 10, cv2.INPAINT_NS)
+    clone = CloneDialog(img)
+    clone.exec()
 
-        cv2.imshow('background', img)
-        if cv2.waitKey(0) == ord('y'):
-            ok = True
-        
+    img = clone.get_image()
+
     cv2.destroyAllWindows()
     np.save(resultfolder / p.with_suffix('.npy'), img)
+
+
