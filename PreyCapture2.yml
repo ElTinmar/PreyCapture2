@@ -1,11 +1,14 @@
 name: PreyCapture2
 channels:
 - conda-forge
+- defaults
 dependencies:
-- python == 3.8
+- python == 3.8.18
 - pip
 - ipython
-- pyqt 
+- pyqt >= 5.15
+- opencv
 - pandas
+- cupy == 12.3.0
 - pip:
   - git+https://github.com/ElTinmar/tracker.git@structured_array_output
