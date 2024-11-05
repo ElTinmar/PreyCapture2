@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity, BackroundImage, FFMPEG_VideoWriter_CPU, FFMPEG_VideoWriter_GPU
+from video_tools import OpenCV_VideoReader, Polarity, BackroundImage, FFMPEG_VideoWriter_CPU, FFMPEG_VideoWriter_GPU
 from image_tools import im2single, im2gray, im2uint8
 from tracker import (
     LinearSumAssignment,
@@ -11,7 +11,6 @@ from tracker import (
     TailTracker_CPU, TailOverlay_opencv, TailTrackerParamTracking, TailTrackerParamOverlay
 )
 from tqdm import tqdm
-import numpy as np
 import json
 import cv2
 from config import resultfolder, export_GPU
