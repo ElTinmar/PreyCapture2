@@ -117,7 +117,5 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
             cv2.imshow('tail',cv2.resize(tracking['tail'][0]['image'],(512, 512)))
             cv2.waitKey(1)
 
-   
-
     video_reader.close()
     cv2.destroyAllWindows()
