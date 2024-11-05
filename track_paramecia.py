@@ -14,22 +14,19 @@ from tqdm import tqdm
 import numpy as np
 import json
 import cv2
-from config import resultfolder, display, export_GPU
+from config import resultfolder, export_GPU
 
-with open('tracking_fish.json', 'r') as fp:
-    settings_fish = json.load(fp)
+display = True
 
 with open('tracking_paramecia.json', 'r') as fp:
-    settings_paramecia = json.load(fp)
-
-settings = settings_fish
+    settings = json.load(fp)
 
 if export_GPU:
     video_writer_constructor = FFMPEG_VideoWriter_GPU
 else:
     video_writer_constructor = FFMPEG_VideoWriter_CPU
 
-for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
+for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
 
     print(p)
 
@@ -49,14 +46,13 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
         height = height,
         width = width,
         fps = fps,
-        filename = p.with_suffix('.tracking.avi'),
+        filename = p.with_suffix('.paramecia_tracking.avi'),
     )
 
     background = BackroundImage(p.with_suffix('.npy'), polarity=Polarity.DARK_ON_BRIGHT)
     background.initialize()
 
-    LUT = np.zeros((height, width))
-    assignment = GridAssignment(LUT)
+    assignment = LinearSumAssignment(distance_threshold=20)
 
     animal_tracker = AnimalTracker_CPU(
         assignment=assignment,
@@ -93,30 +89,6 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
         )
     )
 
-    n_pts_interp = settings['tail_tracking']['n_pts_interp']
-
-    fd = open(p.with_suffix('.csv'), 'w')
-    headers = (
-        'image_index',
-        'centroid_x',
-        'centroid_y',
-        'pc1_x',
-        'pc1_y',
-        'pc2_x',
-        'pc2_y',
-        'left_eye_x',
-        'left_eye_y',
-        'left_eye_angle',
-        'right_eye_x',
-        'right_eye_y',
-        'right_eye_angle',
-    ) \
-    + tuple(f'tail_point_{n:03d}_x' for n in range(n_pts_interp)) \
-    + tuple(f'tail_point_{n:03d}_y' for n in range(n_pts_interp)) 
-    fd.write(','.join(headers) + '\n')
-
-    tail_points = np.zeros((2*n_pts_interp,), np.float32)
-
     for i in tqdm(range(num_frames)):
 
         (rval, frame) = video_reader.next_frame()
@@ -134,28 +106,6 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
         tracking = tracker.track(frame_noback)
 
         # TODO save tracking to file
-        tail_points[:n_pts_interp] = tracking['tail'][0]['skeleton_interp'][:,0]
-        tail_points[n_pts_interp:] = tracking['tail'][0]['skeleton_interp'][:,1]
-
-        row = (
-            f"{i}",
-            f"{tracking['body'][0]['centroid_original_space'][0]}",
-            f"{tracking['body'][0]['centroid_original_space'][1]}",
-            f"{tracking['body'][0]['heading'][0,0]}",
-            f"{tracking['body'][0]['heading'][1,0]}",
-            f"{tracking['body'][0]['heading'][0,1]}",
-            f"{tracking['body'][0]['heading'][1,1]}",
-            f"{tracking['eyes'][0]['left_eye']['centroid'][0]}",
-            f"{tracking['eyes'][0]['left_eye']['centroid'][1]}",
-            f"{tracking['eyes'][0]['left_eye']['angle']}",
-            f"{tracking['eyes'][0]['right_eye']['centroid'][0]}",
-            f"{tracking['eyes'][0]['right_eye']['centroid'][1]}",
-            f"{tracking['eyes'][0]['right_eye']['angle']}",
-        ) \
-        + tuple(f"{tail_points[i]}" for i in range(n_pts_interp)) \
-        + tuple(f"{tail_points[i]}" for i in range(n_pts_interp, 2*n_pts_interp)) 
-        fd.write(','.join(row) + '\n')
-
         oly = overlay.overlay(tracking['animals']['image_fullres'], tracking)
         video_writer.write_frame(oly[:,:,[2,1,0]])
 
@@ -166,19 +116,6 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
             cv2.imshow('overlay',r)
             cv2.waitKey(1)
 
-            cv2.imshow('body', cv2.resize(tracking['body'][0]['image'], (512, 512)))
-            cv2.waitKey(1)
-
-            cv2.imshow('eyes', cv2.resize(tracking['eyes'][0]['image'], (512, 512)))
-            cv2.waitKey(1)
-
-            cv2.imshow('eyes mask', cv2.resize(im2uint8(tracking['eyes'][0]['mask']) ,(512, 512)))
-            cv2.waitKey(1)
-
-            cv2.imshow('tail', cv2.resize(tracking['tail'][0]['image'], (512, 512)))
-            cv2.waitKey(1)
-
-    fd.close()
     video_writer.close()
     video_reader.close()
     cv2.destroyAllWindows()
