@@ -29,6 +29,9 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
 
     print(p)
 
+    fd = open(p.with_suffix('.paramecia.csv'), 'w')
+    headers = tuple((f'idx_{n:03d}', f'x_{n:03d}', f'y_{n:03d}') for n in range(settings['animal_tracking']['num_animals']))
+
     video_reader = OpenCV_VideoReader()
     video_reader.open_file(
         filename = p, 
