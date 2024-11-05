@@ -3,7 +3,7 @@ from pathlib import Path
 from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity, BackroundImage, FFMPEG_VideoWriter_CPU, FFMPEG_VideoWriter_GPU
 from image_tools import im2single, im2gray, im2uint8
 from tracker import (
-    GridAssignment, LinearSumAssignment,
+    LinearSumAssignment,
     MultiFishTracker_CPU, MultiFishOverlay_opencv, MultiFishTrackerParamTracking, MultiFishTrackerParamOverlay,
     AnimalTracker_CPU, AnimalOverlay_opencv, AnimalTrackerParamTracking, AnimalTrackerParamOverlay,
     BodyTracker_CPU, BodyOverlay_opencv, BodyTrackerParamTracking, BodyTrackerParamOverlay,
@@ -52,7 +52,10 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
     background = BackroundImage(p.with_suffix('.npy'), polarity=Polarity.DARK_ON_BRIGHT)
     background.initialize()
 
-    assignment = LinearSumAssignment(distance_threshold=20)
+    assignment = LinearSumAssignment(
+        distance_threshold=20, 
+        num_animals=settings['animal_tracking']['num_animals']
+    )
 
     animal_tracker = AnimalTracker_CPU(
         assignment=assignment,
@@ -114,6 +117,9 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
             
             r = cv2.resize(oly, (512, 512))
             cv2.imshow('overlay',r)
+            cv2.waitKey(1)
+
+            cv2.imshow('animal', cv2.resize(im2uint8(tracking['animals']['mask']), (512, 512)))
             cv2.waitKey(1)
 
     video_writer.close()
