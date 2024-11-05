@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity, BackroundImage
-from image_tools import im2single, im2gray
+from image_tools import im2single, im2gray, im2uint8
 from tracker import (
     GridAssignment, LinearSumAssignment,
     MultiFishTracker_CPU, MultiFishOverlay_opencv, MultiFishTrackerParamTracking, MultiFishTrackerParamOverlay,
@@ -99,9 +99,25 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
         # display tracking
         if display:
             oly = overlay.overlay(tracking['animals']['image_fullres'], tracking)
+
             r = cv2.resize(oly,(512, 512))
             cv2.imshow('overlay',r)
             cv2.waitKey(1)
+
+
+            cv2.imshow('body',cv2.resize(tracking['body'][0]['image'],(512, 512)))
+            cv2.waitKey(1)
+
+            cv2.imshow('eyes',cv2.resize(tracking['eyes'][0]['image'],(512, 512)))
+            cv2.waitKey(1)
+
+            cv2.imshow('eyes mask',cv2.resize(im2uint8(tracking['eyes'][0]['mask']),(512, 512)))
+            cv2.waitKey(1)
+
+            cv2.imshow('tail',cv2.resize(tracking['tail'][0]['image'],(512, 512)))
+            cv2.waitKey(1)
+
+   
 
     video_reader.close()
     cv2.destroyAllWindows()
