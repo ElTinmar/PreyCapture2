@@ -13,6 +13,7 @@ from tracker import (
 from tqdm import tqdm
 import json
 import cv2
+import numpy as np
 from config import resultfolder, export_GPU
 from itertools import chain
 
@@ -114,6 +115,11 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
         tracking = tracker.track(frame_noback)
 
         # TODO save tracking to file
+        row = tuple((str(i), str(c[0]), str(c[1])) for i, c in zip(tracking['animals']['identities'], tracking['animals']['centroids']))
+        row = tuple(chain.from_iterable(row))
+        fd.write(','.join(row) + '\n')
+
+        # export overlay to video
         oly = overlay.overlay(tracking['animals']['image_fullres'], tracking)
         video_writer.write_frame(oly[:,:,[2,1,0]])
 
@@ -127,6 +133,7 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
             cv2.imshow('animal', cv2.resize(im2uint8(tracking['animals']['mask']), (512, 512)))
             cv2.waitKey(1)
 
+    fd.close()
     video_writer.close()
     video_reader.close()
     cv2.destroyAllWindows()
