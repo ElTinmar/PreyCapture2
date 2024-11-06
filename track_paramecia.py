@@ -30,8 +30,13 @@ else:
 for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
 
     print(p)
+    result_file = p.with_suffix('.paramecia.csv')
 
-    fd = open(p.with_suffix('.paramecia.csv'), 'w')
+    if result_file.exists():
+        print(f'{result_file.absolute()} already exists, skipping')
+        continue
+
+    fd = open(result_file, 'w')
     headers = tuple((f'idx_{n:03d}', f'x_{n:03d}', f'y_{n:03d}') for n in range(settings['animal_tracking']['num_animals']))
     headers = tuple(chain.from_iterable(headers))
     fd.write(','.join(headers) + '\n')

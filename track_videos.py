@@ -32,6 +32,32 @@ else:
 for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
 
     print(p)
+    result_file = p.with_suffix('.csv')
+    if result_file.exists():
+        print(f'{result_file.absolute()} already exists, skipping')
+        continue
+
+    n_pts_interp = settings['tail_tracking']['n_pts_interp']
+
+    fd = open(result_file, 'w')
+    headers = (
+        'image_index',
+        'centroid_x',
+        'centroid_y',
+        'pc1_x',
+        'pc1_y',
+        'pc2_x',
+        'pc2_y',
+        'left_eye_x',
+        'left_eye_y',
+        'left_eye_angle',
+        'right_eye_x',
+        'right_eye_y',
+        'right_eye_angle',
+    ) \
+    + tuple(f'tail_point_{n:03d}_x' for n in range(n_pts_interp)) \
+    + tuple(f'tail_point_{n:03d}_y' for n in range(n_pts_interp)) 
+    fd.write(','.join(headers) + '\n')
 
     video_reader = OpenCV_VideoReader()
     video_reader.open_file(
@@ -92,28 +118,6 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
             tail_overlay
         )
     )
-
-    n_pts_interp = settings['tail_tracking']['n_pts_interp']
-
-    fd = open(p.with_suffix('.csv'), 'w')
-    headers = (
-        'image_index',
-        'centroid_x',
-        'centroid_y',
-        'pc1_x',
-        'pc1_y',
-        'pc2_x',
-        'pc2_y',
-        'left_eye_x',
-        'left_eye_y',
-        'left_eye_angle',
-        'right_eye_x',
-        'right_eye_y',
-        'right_eye_angle',
-    ) \
-    + tuple(f'tail_point_{n:03d}_x' for n in range(n_pts_interp)) \
-    + tuple(f'tail_point_{n:03d}_y' for n in range(n_pts_interp)) 
-    fd.write(','.join(headers) + '\n')
 
     tail_points = np.zeros((2*n_pts_interp,), np.float32)
 
