@@ -29,7 +29,7 @@ if export_GPU:
 else:
     video_writer_constructor = FFMPEG_VideoWriter_CPU
 
-for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
+for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
 
     print(p)
 
