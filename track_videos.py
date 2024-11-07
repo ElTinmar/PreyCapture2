@@ -8,7 +8,7 @@ from video_tools import (
     FFMPEG_VideoWriter_CPU, 
     FFMPEG_VideoWriter_GPU
 )
-from image_tools import im2single, im2gray, im2uint8
+from image_tools import im2single, im2gray, im2uint8, im2rgb
 from tracker import (
     GridAssignment,
     MultiFishTracker_CPU, MultiFishOverlay_opencv, MultiFishTrackerParamTracking, MultiFishTrackerParamOverlay,
@@ -175,21 +175,19 @@ def _process(p: Path, settings: dict, display: bool, video_writer_constructor: V
 
         # display tracking
         if display:
+
+            img0 = cv2.resize(oly, (512, 512))
+            img1 = im2rgb(cv2.resize(tracking['body'][0]['image'], (256, 256)))
+            img2 = im2rgb(cv2.resize(im2uint8(tracking['body'][0]['mask']), (256, 256)))
+            img3 = im2rgb(cv2.resize(tracking['eyes'][0]['image'], (256, 256)))
+            img4 = im2rgb(cv2.resize(im2uint8(tracking['eyes'][0]['mask']) ,(256, 256)))
+            img5 = im2rgb(cv2.resize(tracking['tail'][0]['image'], (512, 512)))
             
-            r = cv2.resize(oly, (512, 512))
-            cv2.imshow('overlay',r)
-            cv2.waitKey(1)
+            montage0 = np.vstack((img1, img2))
+            montage1 = np.vstack((img3, img4))
+            montage = np.hstack((img0, montage0, montage1, img5))
 
-            cv2.imshow('body', cv2.resize(tracking['body'][0]['image'], (512, 512)))
-            cv2.waitKey(1)
-
-            cv2.imshow('eyes', cv2.resize(tracking['eyes'][0]['image'], (512, 512)))
-            cv2.waitKey(1)
-
-            cv2.imshow('eyes mask', cv2.resize(im2uint8(tracking['eyes'][0]['mask']) ,(512, 512)))
-            cv2.waitKey(1)
-
-            cv2.imshow('tail', cv2.resize(tracking['tail'][0]['image'], (512, 512)))
+            cv2.imshow(p.name, montage)
             cv2.waitKey(1)
 
     fd.close()
