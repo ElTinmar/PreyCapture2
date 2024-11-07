@@ -159,7 +159,7 @@ process = partial(
     _process,  
     settings = settings, 
     display = display, 
-    video_writer_constructor=video_writer_constructor
+    video_writer_constructor = video_writer_constructor
 )
 
 with Pool(n_cores) as pool:
