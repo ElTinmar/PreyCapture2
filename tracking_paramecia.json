@@ -19,7 +19,7 @@
         "blur_sz_mm": 0.175, 
         "median_filter_sz_mm": 0.0, 
         "downsample_fullres": 1.0, 
-        "num_animals": 100
+        "num_animals": 150
     }, 
     "body_tracking_enabled": false, 
     "eyes_tracking_enabled": false, 
