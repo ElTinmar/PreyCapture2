@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from video_tools import OpenCV_VideoReader, Polarity, BackroundImage, FFMPEG_VideoWriter_CPU, FFMPEG_VideoWriter_GPU
+from video_tools import (
+    OpenCV_VideoReader, 
+    Polarity, 
+    BackroundImage, 
+    FFMPEG_VideoWriter_CPU, 
+    FFMPEG_VideoWriter_GPU, 
+    VideoWriter
+)
 from image_tools import im2single, im2gray, im2uint8
 from tracker import (
     LinearSumAssignment,
@@ -14,10 +21,11 @@ from tqdm import tqdm
 import json
 import cv2
 import numpy as np
-from config import resultfolder, export_GPU
+from config import resultfolder, export_GPU, display, n_cores
 from itertools import chain
+from functools import partial
+from multiprocessing import Pool
 
-display = True
 
 with open('tracking_paramecia.json', 'r') as fp:
     settings = json.load(fp)
@@ -27,14 +35,14 @@ if export_GPU:
 else:
     video_writer_constructor = FFMPEG_VideoWriter_CPU
 
-for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
+def _process(p: Path, settings: dict, display: bool, video_writer_constructor: VideoWriter):
 
     print(p)
     result_file = p.with_suffix('.paramecia.csv')
 
     if result_file.exists():
         print(f'{result_file.absolute()} already exists, skipping')
-        continue
+        return
 
     fd = open(result_file, 'w')
     headers = tuple((f'idx_{n:03d}', f'x_{n:03d}', f'y_{n:03d}') for n in range(settings['animal_tracking']['num_animals']))
@@ -142,3 +150,14 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
     video_writer.close()
     video_reader.close()
     cv2.destroyAllWindows()
+
+process = partial(
+    _process,  
+    settings = settings, 
+    display = display, 
+    video_writer_constructor=video_writer_constructor
+)
+
+with Pool(n_cores) as pool:
+    pool.map(process, resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"))
+

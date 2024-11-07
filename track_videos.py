@@ -1,9 +1,16 @@
 from pathlib import Path
 
-from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity, BackroundImage, FFMPEG_VideoWriter_CPU, FFMPEG_VideoWriter_GPU
+from video_tools import (
+    OpenCV_VideoReader, 
+    Polarity, 
+    BackroundImage, 
+    VideoWriter, 
+    FFMPEG_VideoWriter_CPU, 
+    FFMPEG_VideoWriter_GPU
+)
 from image_tools import im2single, im2gray, im2uint8
 from tracker import (
-    GridAssignment, LinearSumAssignment,
+    GridAssignment,
     MultiFishTracker_CPU, MultiFishOverlay_opencv, MultiFishTrackerParamTracking, MultiFishTrackerParamOverlay,
     AnimalTracker_CPU, AnimalOverlay_opencv, AnimalTrackerParamTracking, AnimalTrackerParamOverlay,
     BodyTracker_CPU, BodyOverlay_opencv, BodyTrackerParamTracking, BodyTrackerParamOverlay,
@@ -14,7 +21,9 @@ from tqdm import tqdm
 import numpy as np
 import json
 import cv2
-from config import resultfolder, display, export_GPU
+from config import resultfolder, display, export_GPU, n_cores
+from multiprocessing import Pool
+from functools import partial
 
 with open('tracking_fish.json', 'r') as fp:
     settings_fish = json.load(fp)
@@ -29,13 +38,14 @@ if export_GPU:
 else:
     video_writer_constructor = FFMPEG_VideoWriter_CPU
 
-for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
+def _process(p: Path, settings: dict, display: bool, video_writer_constructor: VideoWriter):
 
     print(p)
+
     result_file = p.with_suffix('.csv')
     if result_file.exists():
         print(f'{result_file.absolute()} already exists, skipping')
-        continue
+        return
 
     n_pts_interp = settings['tail_tracking']['n_pts_interp']
 
@@ -185,4 +195,15 @@ for p in resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"):
     fd.close()
     video_writer.close()
     video_reader.close()
-    cv2.destroyAllWindows()
+    cv2.destroyAllWindows() 
+
+process = partial(
+    _process,  
+    settings = settings, 
+    display = display, 
+    video_writer_constructor=video_writer_constructor
+)
+
+with Pool(n_cores) as pool:
+    pool.map(process, resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"))
+
