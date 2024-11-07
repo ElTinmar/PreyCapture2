@@ -177,12 +177,12 @@ def _process(p: Path, settings: dict, display: bool, video_writer_constructor: V
         if display:
 
             img0 = cv2.resize(oly, (512, 512))
-            img1 = im2rgb(cv2.resize(tracking['body'][0]['image'], (256, 256)))
+            img1 = im2rgb(cv2.resize(im2uint8(tracking['body'][0]['image']), (256, 256)))
             img2 = im2rgb(cv2.resize(im2uint8(tracking['body'][0]['mask']), (256, 256)))
-            img3 = im2rgb(cv2.resize(tracking['eyes'][0]['image'], (256, 256)))
+            img3 = im2rgb(cv2.resize(im2uint8(tracking['eyes'][0]['image']), (256, 256)))
             img4 = im2rgb(cv2.resize(im2uint8(tracking['eyes'][0]['mask']) ,(256, 256)))
-            img5 = im2rgb(cv2.resize(tracking['tail'][0]['image'], (512, 512)))
-            
+            img5 = im2rgb(cv2.resize(im2uint8(tracking['tail'][0]['image']), (512, 512)))
+
             montage0 = np.vstack((img1, img2))
             montage1 = np.vstack((img3, img4))
             montage = np.hstack((img0, montage0, montage1, img5))
