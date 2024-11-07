@@ -86,7 +86,12 @@ def _process(p: Path, settings: dict, display: bool, video_writer_constructor: V
     eyes_tracker = EyesTracker_CPU(EyesTrackerParamTracking(**settings['eyes_tracking'])) if settings['eyes'] else None
     tail_tracker = TailTracker_CPU(TailTrackerParamTracking(**settings['tail_tracking'])) if settings['tail'] else None
 
-    animal_overlay = AnimalOverlay_opencv(AnimalTrackerParamOverlay())
+    animal_overlay = AnimalOverlay_opencv(AnimalTrackerParamOverlay(
+        pix_per_mm = settings['animal_tracking']['pix_per_mm'],
+        radius_mm=0.75, 
+        centroid_thickness=1
+        )
+    )
     body_overlay = BodyOverlay_opencv(BodyTrackerParamOverlay()) if settings['body'] else None
     eyes_overlay = EyesOverlay_opencv(EyesTrackerParamOverlay()) if settings['eyes'] else None
     tail_overlay = TailOverlay_opencv(TailTrackerParamOverlay()) if settings['tail'] else None
