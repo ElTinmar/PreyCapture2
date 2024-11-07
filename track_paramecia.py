@@ -8,7 +8,7 @@ from video_tools import (
     FFMPEG_VideoWriter_GPU, 
     VideoWriter
 )
-from image_tools import im2single, im2gray, im2uint8
+from image_tools import im2single, im2gray, im2uint8, im2rgb
 from tracker import (
     LinearSumAssignment,
     MultiFishTracker_CPU, MultiFishOverlay_opencv, MultiFishTrackerParamTracking, MultiFishTrackerParamOverlay,
@@ -25,7 +25,6 @@ from config import resultfolder, export_GPU, display, n_cores
 from itertools import chain
 from functools import partial
 from multiprocessing import Pool
-
 
 with open('tracking_paramecia.json', 'r') as fp:
     settings = json.load(fp)
@@ -139,11 +138,11 @@ def _process(p: Path, settings: dict, display: bool, video_writer_constructor: V
         # display tracking
         if display:
             
-            r = cv2.resize(oly, (512, 512))
-            cv2.imshow('overlay',r)
-            cv2.waitKey(1)
+            left = cv2.resize(oly, (512, 512))
+            right = im2rgb(cv2.resize(im2uint8(tracking['animals']['mask']), (512, 512)))
+            montage = np.hstack((left,right))
 
-            cv2.imshow('animal', cv2.resize(im2uint8(tracking['animals']['mask']), (512, 512)))
+            cv2.imshow(p.name, montage)
             cv2.waitKey(1)
 
     fd.close()
