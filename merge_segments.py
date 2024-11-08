@@ -15,6 +15,7 @@ from image_tools import ImageViewer
 import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
+import cv2
 
 class ParameciaClicker(ImageViewer):
 
@@ -48,7 +49,9 @@ class TrackMerger(QWidget):
         self.timestampfile = timestampfile
         self.trackingfile = trackingfile
         self.current_frame_index = 0
-        
+        self.trajectories = {}
+        self.merge = {}
+
         self.video_reader = OpenCV_VideoReader()
         self.video_reader.open_file(
             filename = videofile, 
@@ -65,10 +68,16 @@ class TrackMerger(QWidget):
         self.play_timer.setInterval(int(1000//self.fps))  
         self.play_timer.timeout.connect(self.next_frame)
 
+        self.extract_trajectories()
         self.create_components()
         self.layout_components()
         self.jump_to(0)
         
+    def extract_trajectories(self):
+        
+        for group, data in self.tracking.groupby('index'):
+            self.trajectories[group] = data[['frame','x','y']].to_numpy()
+    
     def create_components(self):
         
         self.clicker = ParameciaClicker(image=np.zeros((self.height, self.width)))
@@ -121,8 +130,13 @@ class TrackMerger(QWidget):
 
     def overlay_tracking(self, image: NDArray) -> NDArray:
 
-        row = self.tracking.loc[self.current_frame_index]
-        print([(row.iloc[i],row.iloc[i+1],row.iloc[i+2]) for i in range(0, len(row), 3)])
+        tracking_data = self.tracking[self.tracking['frame'] == self.current_frame_index]
+        for frame, idx, x, y in tracking_data:
+            if not np.isnan(x):
+                pos = np.int32((x,y))
+                image = cv2.circle(image, pos, radius=15, color=[0,255,0],thickness=1)
+                image = cv2.putText(image, str(int(idx)), np.int32((x,y))-10, cv2.FONT_HERSHEY_SIMPLEX,1, [255,255,255])
+
         return image
 
     def jump_to(self, time_sec: float):
