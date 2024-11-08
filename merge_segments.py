@@ -19,6 +19,44 @@ import cv2
 from scipy.spatial.distance import cdist
 import networkx as nx
 
+def auto_merge(tracking):
+
+    # extract trajectories per idx
+    trajectories = {}
+    for group, data in tracking.groupby('index'):
+        trajectories[group] = data[['frame', 'x', 'y']].to_numpy()
+
+    # get segment start and stop points
+    idx = np.array([], int)
+    segment_start = np.zeros((0,3), np.float32)
+    segment_stop = np.zeros((0,3), np.float32)
+    for key, val in trajectories.items():
+        idx = np.hstack((idx, key))
+        segment_start = np.vstack((segment_start, val[0,:]))
+        segment_stop = np.vstack((segment_stop, val[-1,:]))
+
+    # compute cost matrix and find connections between segment stop and start
+    cost = cdist(segment_stop, segment_start)
+    np.fill_diagonal(cost, np.inf)
+    argmin = cost.argmin(axis=1)
+    mincost = cost.min(axis=1)
+    valid = mincost <= 20
+    edges = np.vstack((idx[valid], idx[argmin[valid]])).T
+    G = nx.Graph()
+    G.add_edges_from(edges)
+    G.add_nodes_from(idx[~valid])
+    
+    merge = {f'M{n}' : sorted(component) for n, component in enumerate(nx.connected_components(G))}
+    reversed_dict = {}
+    for key, values in merge.items():
+        for value in values:
+            reversed_dict[value] = key 
+
+    new_column = [reversed_dict[idx] for idx in tracking['index']]
+    tracking['merged'] = new_column
+
+    return tracking
+
 class ParameciaClicker(ImageViewer):
 
     clicked = pyqtSignal(int, int)
@@ -70,35 +108,9 @@ class TrackMerger(QWidget):
         self.play_timer.setInterval(int(1000//self.fps))  
         self.play_timer.timeout.connect(self.next_frame)
 
-        self.extract_trajectories()
         self.create_components()
         self.layout_components()
         self.jump_to(0)
-        
-    def extract_trajectories(self):
-        
-        for group, data in self.tracking.groupby('index'):
-            self.trajectories[group] = data[['frame', 'x', 'y']].to_numpy()
-
-    def auto_merge(self):
-
-        idx = np.zeros((0,1), int)
-        segment_start = np.zeros((0,3), np.float32)
-        segment_stop = np.zeros((0,3), np.float32)
-        for key, val in self.trajectories.items():
-            idx = np.vstack((idx, key))
-            segment_start = np.vstack((segment_start, val[0,:]))
-            segment_stop = np.vstack((segment_stop, val[-1,:]))
-
-        cost = cdist(segment_stop, segment_start)
-        np.fill_diagonal(cost, np.inf)
-        argmin = cost.argmin(axis=1)
-        mincost = cost.min(axis=1)
-        valid = mincost <= 20
-        edges = np.hstack((idx[valid], idx[argmin[valid]]))
-        G = nx.Graph()
-        G.add_edges_from(edges)
-        self.merge = {f'M{n}' : sorted(component) for n, component in enumerate(nx.connected_components(G))}
         
     def create_components(self):
         
@@ -157,7 +169,7 @@ class TrackMerger(QWidget):
             if not np.isnan(x):
                 pos = np.int32((x,y))
                 image = cv2.circle(image, pos, radius=15, color=[0,255,0],thickness=1)
-                image = cv2.putText(image, str(int(idx)), np.int32((x,y))-10, cv2.FONT_HERSHEY_SIMPLEX,1, [255,255,255])
+                image = cv2.putText(image, str(int(idx)), np.int32((x,y))-10, cv2.FONT_HERSHEY_SIMPLEX, 1, [255,255,255])
 
         return image
 
