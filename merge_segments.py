@@ -17,6 +17,7 @@ import numpy as np
 from numpy.typing import NDArray
 import cv2
 from scipy.spatial.distance import cdist
+import networkx as nx
 
 class ParameciaClicker(ImageViewer):
 
@@ -77,23 +78,28 @@ class TrackMerger(QWidget):
     def extract_trajectories(self):
         
         for group, data in self.tracking.groupby('index'):
-            self.trajectories[group] = data[['frame','x','y']].to_numpy()
+            self.trajectories[group] = data[['frame', 'x', 'y']].to_numpy()
 
     def auto_merge(self):
 
-        idx = []
-        segment_start = np.zeros((0,3))
-        segment_stop = np.zeros((0,3))
+        idx = np.zeros((0,1), int)
+        segment_start = np.zeros((0,3), np.float32)
+        segment_stop = np.zeros((0,3), np.float32)
         for key, val in self.trajectories.items():
-            idx.append(key)
+            idx = np.vstack((idx, key))
             segment_start = np.vstack((segment_start, val[0,:]))
             segment_stop = np.vstack((segment_stop, val[-1,:]))
 
-        cost = cdist(segment_start, segment_stop)
-        
+        cost = cdist(segment_stop, segment_start)
+        np.fill_diagonal(cost, np.inf)
         argmin = cost.argmin(axis=1)
         mincost = cost.min(axis=1)
-    
+        valid = mincost <= 20
+        edges = np.hstack((idx[valid], idx[argmin[valid]]))
+        G = nx.Graph()
+        G.add_edges_from(edges)
+        result = [sorted(component) for component in nx.connected_components(G)]
+        
     def create_components(self):
         
         self.clicker = ParameciaClicker(image=np.zeros((self.height, self.width)))
@@ -147,7 +153,7 @@ class TrackMerger(QWidget):
     def overlay_tracking(self, image: NDArray) -> NDArray:
 
         tracking_data = self.tracking[self.tracking['frame'] == self.current_frame_index]
-        for frame, idx, x, y in tracking_data:
+        for frame, idx, x, y in zip(tracking_data['frame'],tracking_data['index'],tracking_data['x'],tracking_data['y']):
             if not np.isnan(x):
                 pos = np.int32((x,y))
                 image = cv2.circle(image, pos, radius=15, color=[0,255,0],thickness=1)
