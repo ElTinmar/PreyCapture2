@@ -12,3 +12,4 @@ dependencies:
 - cupy == 12.3.0
 - pip:
   - git+https://github.com/ElTinmar/tracker.git@structured_array_output
+  - git+https://github.com/ElTinmar/qt_widgets.git@main
