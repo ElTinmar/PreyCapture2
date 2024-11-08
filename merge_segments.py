@@ -16,6 +16,7 @@ import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
 import cv2
+from scipy.spatial.distance import cdist
 
 class ParameciaClicker(ImageViewer):
 
@@ -77,6 +78,21 @@ class TrackMerger(QWidget):
         
         for group, data in self.tracking.groupby('index'):
             self.trajectories[group] = data[['frame','x','y']].to_numpy()
+
+    def auto_merge(self):
+
+        idx = []
+        segment_start = np.zeros((0,3))
+        segment_stop = np.zeros((0,3))
+        for key, val in self.trajectories.items():
+            idx.append(key)
+            segment_start = np.vstack((segment_start, val[0,:]))
+            segment_stop = np.vstack((segment_stop, val[-1,:]))
+
+        cost = cdist(segment_start, segment_stop)
+        
+        argmin = cost.argmin(axis=1)
+        mincost = cost.min(axis=1)
     
     def create_components(self):
         
