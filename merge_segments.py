@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
 )
 from PyQt5.QtCore import pyqtSignal
-from qt_widget import LabeledSpinbox, LabeledSliderDoubleSpinBox
+from qt_widgets import LabeledSliderDoubleSpinBox
 from pathlib import Path
 from video_tools import OpenCV_VideoReader
 from image_tools import ImageViewer 
@@ -84,7 +84,12 @@ class TrackMerger(QWidget):
 if __name__ == "__main__":
 
     app = QApplication([])
-    main = TrackMerger()
+    main = TrackMerger(
+        videofile='/home/martin/Desktop/tracking/processed/2024_10_03_04_WT-1.70lux_fish2_chunk_005.avi',
+        timestampfile='/home/martin/Desktop/tracking/processed/timestamp.csv',
+        trackingfile='/home/martin/Desktop/tracking/processed/2024_10_03_04_WT-1.70lux_fish2_chunk_005.paramecia.csv'
+    )
     main.show()
     app.exec_()
 
+    
