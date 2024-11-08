@@ -6,8 +6,9 @@ from PyQt5.QtWidgets import (
     QLabel,
     QVBoxLayout,
     QHBoxLayout,
+    QPushButton
 )
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QRunnable, QThreadPool
 from qt_widgets import LabeledSliderDoubleSpinBox
 from pathlib import Path
 from video_tools import OpenCV_VideoReader
@@ -67,15 +68,35 @@ class TrackMerger(QWidget):
         
         self.clicker = ParameciaClicker(image=np.zeros((512,512)))
 
-        self.set_time = LabeledSliderDoubleSpinBox()
-        self.set_time.setText('time (s)')
-        self.set_time.valueChanged.connect(self.jump_to)
+        self.play_pause_button = QPushButton()
+        self.play_pause_button.setStyleSheet("background-color : lightgrey")
+        self.play_pause_button.setCheckable(True)
+        self.play_pause_button.setText('Play')
+        self.play_pause_button.clicked.connect(self.play_pause)
+
+        self.time_slider = LabeledSliderDoubleSpinBox()
+        self.time_slider.setText('time (s)')
+        self.time_slider.setRange(0, self.timestamps['time'].max())
+        self.time_slider.valueChanged.connect(self.jump_to)
+        self.time_slider.setValue(0)
+
+    def play_pause(self):
+        
+        if self.play_pause_button.isChecked():
+             self.play_pause_button.setStyleSheet("background-color : lightblue")
+ 
+        else:
+            self.play_pause_button.setStyleSheet("background-color : lightgrey")
 
     def layout_components(self):
+
+        navigation_bar = QHBoxLayout()
+        navigation_bar.addWidget(self.play_pause_button)
+        navigation_bar.addWidget(self.time_slider)
         
         layout = QVBoxLayout(self)
         layout.addWidget(self.clicker)
-        layout.addWidget(self.set_time)
+        layout.addLayout(navigation_bar)
 
     def jump_to(self, time_sec: float):
 
