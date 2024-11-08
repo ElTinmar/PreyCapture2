@@ -32,7 +32,6 @@ class ParameciaClicker(ImageViewer):
         scene_pos = self.mapToScene(widget_pos)
         self.clicked.emit(scene_pos.x, scene_pos.y)
 
-
 class TrackMerger(QWidget):
     
     def __init__(
