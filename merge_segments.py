@@ -114,7 +114,10 @@ class TrackMerger(QWidget):
             self.clicker.set_image(image)
 
             # update slider
-            #time = self.timestamps
+            time = self.timestamps[self.timestamps['index']==self.current_frame_index]['time'].values[0]
+            self.time_slider.blockSignals(True)
+            self.time_slider.setValue(time)
+            self.time_slider.blockSignals(False)
 
     def jump_to(self, time_sec: float):
 
