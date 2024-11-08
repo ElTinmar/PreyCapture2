@@ -98,7 +98,7 @@ class TrackMerger(QWidget):
         edges = np.hstack((idx[valid], idx[argmin[valid]]))
         G = nx.Graph()
         G.add_edges_from(edges)
-        result = [sorted(component) for component in nx.connected_components(G)]
+        self.merge = {f'M{n}' : sorted(component) for n, component in enumerate(nx.connected_components(G))}
         
     def create_components(self):
         
