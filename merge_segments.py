@@ -3,7 +3,6 @@
 from PyQt5.QtWidgets import (
     QWidget, 
     QApplication,
-    QLabel,
     QVBoxLayout,
     QHBoxLayout,
     QPushButton
@@ -15,13 +14,13 @@ from video_tools import OpenCV_VideoReader
 from image_tools import ImageViewer 
 import pandas as pd
 import numpy as np
-from threading import Thread
+from numpy.typing import NDArray
 
 class ParameciaClicker(ImageViewer):
 
     clicked = pyqtSignal(int, int)
 
-    def __init__(self, image: np.ndarray, *args, **kwargs) -> None:
+    def __init__(self, image: NDArray, *args, **kwargs) -> None:
 
         super().__init__(image, *args, **kwargs)
         self.setMouseTracking(True)
@@ -107,10 +106,12 @@ class TrackMerger(QWidget):
         layout.addLayout(navigation_bar)
 
     def next_frame(self):
+
         rval, image = self.video_reader.next_frame()
         if rval:
             self.current_frame_index += 1
-            self.clicker.set_image(image)
+            img = self.overlay_tracking(image)
+            self.clicker.set_image(img)
 
             # update slider
             time = self.timestamps[self.timestamps['index']==self.current_frame_index]['time'].values[0]
@@ -118,14 +119,22 @@ class TrackMerger(QWidget):
             self.time_slider.setValue(time)
             self.time_slider.blockSignals(False)
 
+    def overlay_tracking(self, image: NDArray) -> NDArray:
+
+        row = self.tracking.loc[self.current_frame_index]
+        print([(row.iloc[i],row.iloc[i+1],row.iloc[i+2]) for i in range(0, len(row), 3)])
+        return image
+
     def jump_to(self, time_sec: float):
 
-        # maybe load video chunk around time point 
         index = (self.timestamps['time'] - time_sec).abs().argmin()
         self.video_reader.seek_to(index)
         self.current_frame_index = index
+
         rval, image = self.video_reader.next_frame()
-        self.clicker.set_image(image)
+        if rval:
+            img = self.overlay_tracking(image)
+            self.clicker.set_image(img)
 
 if __name__ == "__main__":
 
