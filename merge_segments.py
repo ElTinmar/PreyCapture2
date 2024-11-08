@@ -8,13 +8,14 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QPushButton
 )
-from PyQt5.QtCore import pyqtSignal, QRunnable, QThreadPool
+from PyQt5.QtCore import pyqtSignal, QTimer
 from qt_widgets import LabeledSliderDoubleSpinBox
 from pathlib import Path
 from video_tools import OpenCV_VideoReader
 from image_tools import ImageViewer 
 import pandas as pd
 import numpy as np
+from threading import Thread
 
 class ParameciaClicker(ImageViewer):
 
@@ -30,6 +31,7 @@ class ParameciaClicker(ImageViewer):
         widget_pos = event.pos()
         scene_pos = self.mapToScene(widget_pos)
         self.clicked.emit(scene_pos.x, scene_pos.y)
+
 
 class TrackMerger(QWidget):
     
@@ -56,17 +58,22 @@ class TrackMerger(QWidget):
         )
         self.height = self.video_reader.get_height()
         self.width = self.video_reader.get_width()
+        self.fps = self.video_reader.get_fps()
 
         self.timestamps = pd.read_csv(timestampfile)
-
         self.tracking = pd.read_csv(trackingfile)
+
+        self.play_timer = QTimer()
+        self.play_timer.setInterval(int(1000//self.fps))  
+        self.play_timer.timeout.connect(self.next_frame)
 
         self.create_components()
         self.layout_components()
+        self.jump_to(0)
         
     def create_components(self):
         
-        self.clicker = ParameciaClicker(image=np.zeros((512,512)))
+        self.clicker = ParameciaClicker(image=np.zeros((self.height, self.width)))
 
         self.play_pause_button = QPushButton()
         self.play_pause_button.setStyleSheet("background-color : lightgrey")
@@ -83,10 +90,12 @@ class TrackMerger(QWidget):
     def play_pause(self):
         
         if self.play_pause_button.isChecked():
-             self.play_pause_button.setStyleSheet("background-color : lightblue")
+            self.play_pause_button.setStyleSheet("background-color : lightblue")
+            self.play_timer.start()
  
         else:
             self.play_pause_button.setStyleSheet("background-color : lightgrey")
+            self.play_timer.stop()
 
     def layout_components(self):
 
@@ -97,6 +106,15 @@ class TrackMerger(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.clicker)
         layout.addLayout(navigation_bar)
+
+    def next_frame(self):
+        rval, image = self.video_reader.next_frame()
+        if rval:
+            self.current_frame_index += 1
+            self.clicker.set_image(image)
+
+            # update slider
+            #time = self.timestamps
 
     def jump_to(self, time_sec: float):
 
