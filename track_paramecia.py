@@ -22,7 +22,6 @@ import json
 import cv2
 import numpy as np
 from config import resultfolder, export_GPU, display, n_cores
-from itertools import chain
 from functools import partial
 from multiprocessing import Pool
 
@@ -44,8 +43,7 @@ def _process(p: Path, settings: dict, display: bool, video_writer_constructor: V
         return
 
     fd = open(result_file, 'w')
-    headers = tuple((f'idx_{n:03d}', f'x_{n:03d}', f'y_{n:03d}') for n in range(settings['animal_tracking']['num_animals']))
-    headers = tuple(chain.from_iterable(headers))
+    headers = ('frame', 'index', 'x', 'y')
     fd.write(','.join(headers) + '\n')
 
     video_reader = OpenCV_VideoReader()
@@ -132,9 +130,10 @@ def _process(p: Path, settings: dict, display: bool, video_writer_constructor: V
         tracking = tracker.track(frame_noback)
 
         # TODO save tracking to file
-        row = tuple((str(i), str(c[0]), str(c[1])) for i, c in zip(tracking['animals']['identities'], tracking['animals']['centroids']))
-        row = tuple(chain.from_iterable(row))
-        fd.write(','.join(row) + '\n')
+        for id, centroid in zip(tracking['animals']['identities'], tracking['animals']['centroids']):
+            if not np.isnan(centroid).any():
+                row = (str(i), str(id), str(centroid[0]), str(centroid[1]))  
+                fd.write(','.join(row) + '\n')
 
         # export overlay to video
         oly = overlay.overlay(tracking['animals']['image_fullres'], tracking)
