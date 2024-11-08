@@ -59,10 +59,13 @@ class TrackMerger(QWidget):
         self.timestamps = pd.read_csv(timestampfile)
 
         self.tracking = pd.read_csv(trackingfile)
+
+        self.create_components()
+        self.layout_components()
         
     def create_components(self):
         
-        self.clicker = ParameciaClicker(image=np.zeros(512,512))
+        self.clicker = ParameciaClicker(image=np.zeros((512,512)))
 
         self.set_time = LabeledSliderDoubleSpinBox()
         self.set_time.setText('time (s)')
@@ -80,6 +83,8 @@ class TrackMerger(QWidget):
         index = (self.timestamps['time'] - time_sec).abs().argmin()
         self.video_reader.seek_to(index)
         self.current_frame_index = index
+        rval, image = self.video_reader.next_frame()
+        self.clicker.set_image(image)
 
 if __name__ == "__main__":
 
@@ -92,4 +97,3 @@ if __name__ == "__main__":
     main.show()
     app.exec_()
 
-    
