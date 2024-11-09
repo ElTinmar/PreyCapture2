@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QPushButton
 )
 from PyQt5.QtCore import pyqtSignal, QTimer
-from qt_widgets import LabeledSliderDoubleSpinBox
+from qt_widgets import LabeledSliderDoubleSpinBox, LabeledDoubleSpinBox
 from pathlib import Path
 from video_tools import OpenCV_VideoReader
 from image_tools import ImageViewer 
@@ -130,6 +130,15 @@ class TrackMerger(QWidget):
         self.time_slider.valueChanged.connect(self.jump_to)
         self.time_slider.setValue(0)
 
+        self.fps_spinbox = LabeledDoubleSpinBox()
+        self.fps_spinbox.setText('fps')
+        self.fps_spinbox.setRange(0, 1000)
+        self.fps_spinbox.valueChanged.connect(self.change_fps)
+        self.fps_spinbox.setValue(self.fps)
+
+    def change_fps(self):
+        self.play_timer.setInterval(int(1000//self.fps_spinbox.value()))
+
     def play_pause(self):
         
         if self.play_pause_button.isChecked():
@@ -145,6 +154,7 @@ class TrackMerger(QWidget):
         navigation_bar = QHBoxLayout()
         navigation_bar.addWidget(self.play_pause_button)
         navigation_bar.addWidget(self.time_slider)
+        navigation_bar.addWidget(self.fps_spinbox)
         
         layout = QVBoxLayout(self)
         layout.addWidget(self.clicker)
