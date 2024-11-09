@@ -20,6 +20,7 @@ from scipy.spatial.distance import cdist
 import networkx as nx
 
 def auto_merge(tracking):
+    # TODO: two paramecia can get the same merged index
 
     # extract trajectories per idx
     trajectories = {}
@@ -32,15 +33,15 @@ def auto_merge(tracking):
     segment_stop = np.zeros((0,3), np.float32)
     for key, val in trajectories.items():
         idx = np.hstack((idx, key))
-        segment_start = np.vstack((segment_start, val[0,:]))
-        segment_stop = np.vstack((segment_stop, val[-1,:]))
+        segment_start = np.vstack((segment_start, val[0,:] / [20,1,1]))
+        segment_stop = np.vstack((segment_stop, val[-1,:] / [20,1,1]))
 
     # compute cost matrix and find connections between segment stop and start
     cost = cdist(segment_stop, segment_start)
     np.fill_diagonal(cost, np.inf)
     argmin = cost.argmin(axis=1)
     mincost = cost.min(axis=1)
-    valid = mincost <= 20
+    valid = mincost <= 10
     edges = np.vstack((idx[valid], idx[argmin[valid]])).T
     G = nx.Graph()
     G.add_edges_from(edges)
@@ -103,6 +104,7 @@ class TrackMerger(QWidget):
 
         self.timestamps = pd.read_csv(timestampfile)
         self.tracking = pd.read_csv(trackingfile)
+        self.tracking = auto_merge(self.tracking)
 
         self.play_timer = QTimer()
         self.play_timer.setInterval(int(1000//self.fps))  
@@ -165,11 +167,12 @@ class TrackMerger(QWidget):
     def overlay_tracking(self, image: NDArray) -> NDArray:
 
         tracking_data = self.tracking[self.tracking['frame'] == self.current_frame_index]
-        for frame, idx, x, y in zip(tracking_data['frame'],tracking_data['index'],tracking_data['x'],tracking_data['y']):
+        for frame, idx, merged_id, x, y in zip(tracking_data['frame'],tracking_data['index'],tracking_data['merged'],tracking_data['x'],tracking_data['y']):
             if not np.isnan(x):
                 pos = np.int32((x,y))
                 image = cv2.circle(image, pos, radius=15, color=[0,255,0],thickness=1)
                 image = cv2.putText(image, str(int(idx)), np.int32((x,y))-10, cv2.FONT_HERSHEY_SIMPLEX, 1, [255,255,255])
+                image = cv2.putText(image, merged_id, np.int32((x,y))+10, cv2.FONT_HERSHEY_SIMPLEX, 1, [255,255,255])
 
         return image
 
