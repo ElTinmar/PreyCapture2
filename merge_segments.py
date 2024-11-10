@@ -41,7 +41,7 @@ def auto_merge(tracking):
     np.fill_diagonal(cost, np.inf)
     argmin = cost.argmin(axis=1)
     mincost = cost.min(axis=1)
-    valid = (mincost <= 30) & (segment_start[argmin,0] > segment_stop[:,0])
+    valid = (mincost <= 40) & (segment_start[argmin,0] > segment_stop[:,0])
     edges = np.vstack((idx[valid], idx[argmin[valid]])).T
     G = nx.Graph()
     G.add_edges_from(edges)
@@ -177,7 +177,14 @@ class TrackMerger(QWidget):
     def overlay_tracking(self, image: NDArray) -> NDArray:
 
         tracking_data = self.tracking[self.tracking['frame'] == self.current_frame_index]
-        for frame, idx, merged_id, x, y in zip(tracking_data['frame'],tracking_data['index'],tracking_data['merged'],tracking_data['x'],tracking_data['y']):
+        z = zip(
+            tracking_data['frame'],
+            tracking_data['index'],
+            tracking_data['merged'],
+            tracking_data['x'],
+            tracking_data['y']
+        )
+        for frame, idx, merged_id, x, y in z:
             if not np.isnan(x):
                 pos = np.int32((x,y))
                 image = cv2.circle(image, pos, radius=15, color=[0,255,0],thickness=1)
