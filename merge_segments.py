@@ -19,6 +19,15 @@ import cv2
 from scipy.spatial.distance import cdist
 import networkx as nx
 
+def count(tracking):
+    
+    param_number = []
+    frame = []
+    for group, data in tracking.groupby('frame'):
+        frame.append(group)
+        param_number.append(data.shape[0])
+    return frame, param_number
+
 def auto_merge(tracking):
     # TODO: two paramecia can get the same merged index
 
