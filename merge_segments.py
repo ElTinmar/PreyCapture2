@@ -41,7 +41,7 @@ def auto_merge(tracking):
     np.fill_diagonal(cost, np.inf)
     argmin = cost.argmin(axis=1)
     mincost = cost.min(axis=1)
-    valid = mincost <= 10
+    valid = (mincost <= 30) & (segment_start[argmin,0] > segment_stop[:,0])
     edges = np.vstack((idx[valid], idx[argmin[valid]])).T
     G = nx.Graph()
     G.add_edges_from(edges)
