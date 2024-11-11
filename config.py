@@ -9,6 +9,7 @@ folder_map = {
 
 basefolder = Path(folder_map[platform.node()])   
 datafolder =  basefolder / 'data'
+cleandatafolder = basefolder / 'reindexed'
 resultfolder = basefolder / 'processed'
 display = False
 export_GPU = False
