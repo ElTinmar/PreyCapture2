@@ -1,15 +1,14 @@
 # check if there is a discrepancy between number of frames in video and timestamp file
 
 from video_tools import CPU_VideoProcessor
-from pathlib import Path
-from config import datafolder, resultfolder, n_chunks
+from config import cleandatafolder
 import pandas as pd
 
 RED = "\033[91m"
 GREEN = "\033[92m"
 RESET = "\033[0m"
 
-movies = sorted(datafolder.rglob("*.avi"))
+movies = sorted(cleandatafolder.rglob("*.avi"))
 
 for p in movies:
 

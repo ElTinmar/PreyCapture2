@@ -1,8 +1,8 @@
 from video_tools import CPU_VideoProcessor
 from pathlib import Path
-from config import datafolder, resultfolder, n_chunks
+from config import cleandatafolder, resultfolder, n_chunks
 
-for p in datafolder.rglob("*.avi"):
+for p in cleandatafolder.rglob("*.avi"):
 
     print(p)
     
