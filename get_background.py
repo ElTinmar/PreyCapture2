@@ -31,6 +31,12 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
 
     print(p)
 
+    outfile = resultfolder / p.with_suffix('.npy')
+
+    if outfile.exists():
+        print(f'{outfile} already exists, skipping')
+        continue
+
     video_reader = OpenCV_VideoReader()
     video_reader.open_file(
         filename = p, 
@@ -51,6 +57,6 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
     img = clone.get_image()
 
     cv2.destroyAllWindows()
-    np.save(resultfolder / p.with_suffix('.npy'), img)
+    np.save(outfile, img)
 
 
