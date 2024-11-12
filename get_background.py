@@ -12,6 +12,7 @@ from functools import partial
 background_subtracter = partial(
     StaticBackground, 
     polarity=Polarity.DARK_ON_BRIGHT, 
+    method='mode',
     num_sample_frames = n_background_samples
 )
 
@@ -27,11 +28,11 @@ class CloneDialog(QDialog):
     def get_image(self):
         return self.clone.get_image()
 
-app = QApplication([])
-
 def create_background(p, resultfolder):
 
     print(p)
+
+    app = QApplication([])
 
     outfile = resultfolder / p.with_suffix('.npy')
 
@@ -67,5 +68,7 @@ process = partial(
     resultfolder = resultfolder
 )
 
-with Pool(n_cores) as pool:
-    pool.map(process, resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"))
+if __name__ == '__main__':
+
+    with Pool(n_cores) as pool:
+        pool.map(process, resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"))
