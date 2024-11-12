@@ -1,11 +1,13 @@
 from pathlib import Path
 from video_tools import OpenCV_VideoReader, InpaintBackground, Polarity, StaticBackground
 import numpy as np
-from config import resultfolder, n_background_samples
+from config import resultfolder, n_background_samples, n_cores
 import cv2
 from functools import partial
 from image_tools import polymask, CloneTool
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QDialog
+from multiprocessing import Pool
+from functools import partial
 
 background_subtracter = partial(
     StaticBackground, 
@@ -27,7 +29,7 @@ class CloneDialog(QDialog):
 
 app = QApplication([])
 
-for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
+def create_background(p, resultfolder):
 
     print(p)
 
@@ -35,7 +37,7 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
 
     if outfile.exists():
         print(f'{outfile} already exists, skipping')
-        continue
+        return
 
     video_reader = OpenCV_VideoReader()
     video_reader.open_file(
@@ -60,3 +62,10 @@ for p in resultfolder.rglob("*fish[1-2]_chunk*.avi"):
     np.save(outfile, img)
 
 
+process = partial(
+    create_background,  
+    resultfolder = resultfolder
+)
+
+with Pool(n_cores) as pool:
+    pool.map(process, resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"))
