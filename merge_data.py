@@ -32,7 +32,7 @@ def merge_csv(
         merged_data = pd.concat([merged_data, data])
     merged_data.to_csv(p.with_suffix(out_suffix), index=False)
 
-if __name__ == '__main__.py':
+if __name__ == '__main__':
 
     movies = resultfolder.rglob("*fish[1-2].avi")
 
