@@ -29,7 +29,7 @@ def split(p):
         )
 
         split_processor = CPU_VideoProcessor(resultfolder / (p.stem + '_' + suffix + '.avi'))
-        split_processor.split(            
+        split_processor.split_frame(            
             n = n_chunks,
             suffix = 'chunk',
             dest_folder = resultfolder
