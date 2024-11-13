@@ -35,6 +35,12 @@ def split(p):
             dest_folder = resultfolder
         )
 
+filters = ['7.30Klux']
+files = [
+    p for p in cleandatafolder.rglob("*.avi") 
+    if any(s for s in filters if s in str(p.resolve()))
+]
+
 with Pool(n_cores) as pool:
-    pool.map(split, cleandatafolder.rglob("*.avi"))
+    pool.map(split, files)
 
