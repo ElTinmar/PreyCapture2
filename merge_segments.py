@@ -283,12 +283,29 @@ class TrackMerger(QWidget):
 
 if __name__ == "__main__":
 
+    data = [
+        [
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.avi',
+            '/media/martin/DATA/Mecp2/reindexed/MeCP2-7.30Klux-Direct/2024_10_10_01.txt',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.paramecia_tracking.csv',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.fish_tracking.csv'
+        ],
+        [
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish2.avi',
+            '/media/martin/DATA/Mecp2/reindexed/MeCP2-7.30Klux-Direct/2024_10_10_01.txt',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish2.paramecia_tracking.csv',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish2.fish_tracking.csv'
+        ],
+    ]
+
+    exp = 1
+
     app = QApplication([])
     main = TrackMerger(
-        videofile='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.avi',
-        timestampfile='/media/martin/DATA/Mecp2/reindexed/MeCP2-7.30Klux-Direct/2024_10_10_01.txt',
-        param_tracking='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.paramecia_tracking.csv',
-        fish_tracking='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.fish_tracking.csv'
+        videofile=data[exp][0],
+        timestampfile=data[exp][1],
+        param_tracking=data[exp][2],
+        fish_tracking=data[exp][3]
     )
     main.show()
     app.exec_()
