@@ -256,7 +256,7 @@ class TrackMerger(QWidget):
 
     def jump_to(self, time_sec: float):
 
-        index = (self.timestamps['time'] - time_sec).abs().argmin()
+        index = (self.timestamps['time']/1000 - time_sec).abs().argmin()
         self.video_reader.seek_to(index)
         self.current_frame_index = index
 
@@ -268,7 +268,7 @@ class TrackMerger(QWidget):
             [self.current_frame_index, self.current_frame_index],
             [-np.pi/2,np.pi/2]
         )
-        self.current_loc2.setData(
+        self.current_loc3.setData(
             [self.current_frame_index, self.current_frame_index],
             [-60,60]
         )
