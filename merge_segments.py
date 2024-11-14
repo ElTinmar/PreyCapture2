@@ -111,7 +111,7 @@ class TrackMerger(QWidget):
         self.width = self.video_reader.get_width()
         self.fps = self.video_reader.get_fps()
 
-        self.timestamps = pd.read_csv(timestampfile)
+        self.timestamps = pd.read_csv(timestampfile, delim_whitespace=True, header=None,  names=['index', 'timestamp', 'frame_num'], index_col=0)
         self.tracking = pd.read_csv(trackingfile)
         self.tracking = auto_merge(self.tracking)
 
@@ -217,9 +217,9 @@ if __name__ == "__main__":
 
     app = QApplication([])
     main = TrackMerger(
-        videofile='/home/martin/Desktop/tracking/processed/2024_10_03_04_WT-1.70lux_fish2_chunk_005.avi',
-        timestampfile='/home/martin/Desktop/tracking/processed/timestamp.csv',
-        trackingfile='/home/martin/Desktop/tracking/processed/2024_10_03_04_WT-1.70lux_fish2_chunk_005.paramecia.csv'
+        videofile='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.avi',
+        timestampfile='/media/martin/DATA/Mecp2/reindexed/MeCP2-7.30Klux-Direct/2024_10_10_01.txt',
+        trackingfile='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.paramecia_tracking.csv'
     )
     main.show()
     app.exec_()
