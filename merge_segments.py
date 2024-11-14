@@ -111,7 +111,7 @@ class TrackMerger(QWidget):
         self.width = self.video_reader.get_width()
         self.fps = self.video_reader.get_fps()
 
-        self.timestamps = pd.read_csv(timestampfile, delim_whitespace=True, header=None,  names=['index', 'timestamp', 'frame_num'], index_col=0)
+        self.timestamps = pd.read_csv(timestampfile, delim_whitespace=True, header=None,  names=['index', 'time', 'frame_num'], index_col=0)
         self.tracking = pd.read_csv(trackingfile)
         self.tracking = auto_merge(self.tracking)
 
