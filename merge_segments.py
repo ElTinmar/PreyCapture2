@@ -90,7 +90,8 @@ class TrackMerger(QWidget):
             self,
             videofile: Path,
             timestampfile: Path,
-            trackingfile: Path,
+            param_tracking: Path,
+            fish_tracking: Path,
             *args, 
             **kwargs
         ):
@@ -99,7 +100,7 @@ class TrackMerger(QWidget):
 
         self.videofile = videofile
         self.timestampfile = timestampfile
-        self.trackingfile = trackingfile
+        self.param_tracking = param_tracking
         self.current_frame_index = 0
         self.trajectories = {}
         self.merge = {}
@@ -114,10 +115,12 @@ class TrackMerger(QWidget):
         self.fps = self.video_reader.get_fps()
 
         self.timestamps = pd.read_csv(timestampfile, delim_whitespace=True, header=None,  names=['index', 'time', 'frame_num'], index_col=0)
-        self.tracking = pd.read_csv(trackingfile)
-        self.tracking = auto_merge(self.tracking)
+        self.param_tracking = pd.read_csv(param_tracking)
+        self.param_tracking = auto_merge(self.param_tracking)
 
-        self.frames, self.num_param = count(self.tracking)
+        self.fish_tracking = pd.read_csv(fish_tracking)
+
+        self.frames, self.num_param = count(self.param_tracking)
         self.num_param_smooth = savgol_filter(self.num_param, window_length=1800, polyorder=2)
 
         self.play_timer = QTimer()
@@ -150,16 +153,30 @@ class TrackMerger(QWidget):
         self.fps_spinbox.valueChanged.connect(self.change_fps)
         self.fps_spinbox.setValue(self.fps)
 
-        self.plot_widget = pg.plot()
-        self.plot_widget.setFixedHeight(150)
-        self.plot_widget.setYRange(0,150)
-
-        self.plot_widget.plot(self.frames, self.num_param)
-        self.plot_widget.plot(self.frames, self.num_param_smooth, pen='r') 
-        self.current_loc = self.plot_widget.plot([0,0], [0, 150], pen='g')
+        self.plot_param_widget = pg.plot()
+        self.plot_param_widget.setFixedHeight(150)
+        self.plot_param_widget.setYRange(0,150)
+        self.plot_param_widget.plot(self.frames, self.num_param)
+        self.plot_param_widget.plot(self.frames, self.num_param_smooth, pen='r') 
+        self.current_loc1 = self.plot_param_widget.plot([0,0], [0, 150], pen='g')
         self.text_item = pg.TextItem(str(self.num_param_smooth[0]), anchor=(0.5, 0.5))  # Centered text
-        self.plot_widget.addItem(self.text_item)
+        self.plot_param_widget.addItem(self.text_item)
         self.text_item.setPos(10, 150) 
+
+        self.plot_fish_widget = pg.plot()
+        self.plot_fish_widget.setFixedHeight(150)
+        self.plot_fish_widget.setYRange(-np.pi/2, np.pi/2)
+        self.plot_fish_widget.plot(self.fish_tracking['image_index'], self.fish_tracking['left_eye_angle'], pen='b')
+        self.plot_fish_widget.plot(self.fish_tracking['image_index'], self.fish_tracking['right_eye_angle'], pen='y')
+        self.current_loc2 = self.plot_fish_widget.plot([0,0], [-np.pi/2, np.pi/2], pen='g')
+        self.plot_fish_widget.setXRange(-150,150)
+
+        self.plot_fish_widget_tail = pg.plot()
+        self.plot_fish_widget_tail.setFixedHeight(150)
+        self.plot_fish_widget_tail.setYRange(-60, 60)
+        self.plot_fish_widget_tail.plot(self.fish_tracking['image_index'], self.fish_tracking[['tail_point_037_x','tail_point_038_x','tail_point_039_x']].mean(axis=1), pen='m')
+        self.current_loc3 = self.plot_fish_widget.plot([0,0], [-60, 60], pen='g')
+        self.plot_fish_widget_tail.setXRange(-150,150)
 
     def change_fps(self):
         self.play_timer.setInterval(int(1000//self.fps_spinbox.value()))
@@ -182,7 +199,9 @@ class TrackMerger(QWidget):
         navigation_bar.addWidget(self.fps_spinbox)
         
         layout = QVBoxLayout(self)
-        layout.addWidget(self.plot_widget)
+        layout.addWidget(self.plot_param_widget)
+        layout.addWidget(self.plot_fish_widget)
+        layout.addWidget(self.plot_fish_widget_tail)
         layout.addWidget(self.clicker)
         layout.addLayout(navigation_bar)
 
@@ -200,15 +219,25 @@ class TrackMerger(QWidget):
             self.time_slider.setValue(time)
             self.time_slider.blockSignals(False)
 
-            self.current_loc.setData(
+            self.current_loc1.setData(
                 [self.current_frame_index, self.current_frame_index],
                 [0,150]
             )
+            self.current_loc2.setData(
+                [self.current_frame_index, self.current_frame_index],
+                [-np.pi/2,np.pi/2]
+            )
+            self.current_loc3.setData(
+                [self.current_frame_index, self.current_frame_index],
+                [-60,60]
+            )
             self.text_item.setText(f"{self.num_param_smooth[self.current_frame_index]:.2f}")
+            self.plot_fish_widget.setXRange(self.current_frame_index-150, self.current_frame_index+150)
+            self.plot_fish_widget_tail.setXRange(self.current_frame_index-150, self.current_frame_index+150)
 
     def overlay_tracking(self, image: NDArray) -> NDArray:
 
-        tracking_data = self.tracking[self.tracking['frame'] == self.current_frame_index]
+        tracking_data = self.param_tracking[self.param_tracking['frame'] == self.current_frame_index]
         z = zip(
             tracking_data['frame'],
             tracking_data['index'],
@@ -231,11 +260,21 @@ class TrackMerger(QWidget):
         self.video_reader.seek_to(index)
         self.current_frame_index = index
 
-        self.current_loc.setData(
+        self.current_loc1.setData(
             [self.current_frame_index, self.current_frame_index],
             [0,150]
         )
+        self.current_loc2.setData(
+            [self.current_frame_index, self.current_frame_index],
+            [-np.pi/2,np.pi/2]
+        )
+        self.current_loc2.setData(
+            [self.current_frame_index, self.current_frame_index],
+            [-60,60]
+        )
         self.text_item.setText(f"{self.num_param_smooth[self.current_frame_index]:.2f}")
+        self.plot_fish_widget.setXRange(self.current_frame_index-150, self.current_frame_index+150)
+        self.plot_fish_widget_tail.setXRange(self.current_frame_index-150, self.current_frame_index+150)
 
         rval, image = self.video_reader.next_frame()
         if rval:
@@ -248,7 +287,8 @@ if __name__ == "__main__":
     main = TrackMerger(
         videofile='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.avi',
         timestampfile='/media/martin/DATA/Mecp2/reindexed/MeCP2-7.30Klux-Direct/2024_10_10_01.txt',
-        trackingfile='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.paramecia_tracking.csv'
+        param_tracking='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.paramecia_tracking.csv',
+        fish_tracking='/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.fish_tracking.csv'
     )
     main.show()
     app.exec_()
