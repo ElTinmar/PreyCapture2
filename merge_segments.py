@@ -18,6 +18,7 @@ from numpy.typing import NDArray
 import cv2
 from scipy.spatial.distance import cdist
 import networkx as nx
+import pyqtgraph as pg
 
 def count(tracking):
     
@@ -115,6 +116,8 @@ class TrackMerger(QWidget):
         self.tracking = pd.read_csv(trackingfile)
         self.tracking = auto_merge(self.tracking)
 
+        self.frames, self.num_param = count(self.tracking)
+
         self.play_timer = QTimer()
         self.play_timer.setInterval(int(1000//self.fps))  
         self.play_timer.timeout.connect(self.next_frame)
@@ -145,6 +148,12 @@ class TrackMerger(QWidget):
         self.fps_spinbox.valueChanged.connect(self.change_fps)
         self.fps_spinbox.setValue(self.fps)
 
+        self.plot_widget = pg.plot()
+        self.plot_widget.setFixedHeight(150)
+        self.plot_widget.setYRange(0,150)
+        self.plot_widget.plot(self.frames, self.num_param)
+        self.current_loc = self.plot_widget.plot([0,0], [0, 150])
+
     def change_fps(self):
         self.play_timer.setInterval(int(1000//self.fps_spinbox.value()))
 
@@ -168,6 +177,7 @@ class TrackMerger(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.clicker)
         layout.addLayout(navigation_bar)
+        layout.addWidget(self.plot_widget)
 
     def next_frame(self):
 
@@ -178,10 +188,15 @@ class TrackMerger(QWidget):
             self.clicker.set_image(img)
 
             # update slider
-            time = self.timestamps[self.timestamps['index']==self.current_frame_index]['time'].values[0]
+            time = self.timestamps[self.timestamps.index==self.current_frame_index]['time'].values[0]
             self.time_slider.blockSignals(True)
             self.time_slider.setValue(time)
             self.time_slider.blockSignals(False)
+
+            self.current_loc.setData(
+                [self.current_frame_index, self.current_frame_index],
+                [0,150]
+            )
 
     def overlay_tracking(self, image: NDArray) -> NDArray:
 
@@ -207,6 +222,11 @@ class TrackMerger(QWidget):
         index = (self.timestamps['time'] - time_sec).abs().argmin()
         self.video_reader.seek_to(index)
         self.current_frame_index = index
+
+        self.current_loc.setData(
+            [self.current_frame_index, self.current_frame_index],
+            [0,150]
+        )
 
         rval, image = self.video_reader.next_frame()
         if rval:
