@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import (
     QApplication,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton
+    QPushButton,
+    QAction
 )
 from PyQt5.QtCore import pyqtSignal, QTimer
 from qt_widgets import LabeledSliderDoubleSpinBox, LabeledDoubleSpinBox
@@ -85,6 +86,10 @@ class ParameciaClicker(ImageViewer):
         self.clicked.emit(scene_pos.x, scene_pos.y)
 
 class TrackMerger(QWidget):
+
+    yrange_param = [5, 70]
+    yrange_eyes = [-np.pi/2, np.pi/2]
+    yrange_tail = [-60,60]
     
     def __init__(
             self,
@@ -120,6 +125,7 @@ class TrackMerger(QWidget):
 
         self.fish_tracking = pd.read_csv(fish_tracking)
 
+        self.max_time = self.timestamps['time'].max()/1000
         self.frames, self.num_param = count(self.param_tracking)
         self.num_param_smooth = savgol_filter(self.num_param, window_length=1800, polyorder=2)
 
@@ -132,18 +138,18 @@ class TrackMerger(QWidget):
         self.jump_to(0)
         
     def create_components(self):
-        
+
         self.clicker = ParameciaClicker(image=np.zeros((self.height, self.width)))
 
         self.play_pause_button = QPushButton()
         self.play_pause_button.setStyleSheet("background-color : lightgrey")
         self.play_pause_button.setCheckable(True)
         self.play_pause_button.setText('Play')
-        self.play_pause_button.clicked.connect(self.play_pause)
+        self.play_pause_button.toggled.connect(self.play_pause)
 
         self.time_slider = LabeledSliderDoubleSpinBox()
         self.time_slider.setText('time (s)')
-        self.time_slider.setRange(0, self.timestamps['time'].max()/1000)
+        self.time_slider.setRange(0, self.max_time)
         self.time_slider.valueChanged.connect(self.jump_to)
         self.time_slider.setValue(0)
 
@@ -155,28 +161,44 @@ class TrackMerger(QWidget):
 
         self.plot_param_widget = pg.plot()
         self.plot_param_widget.setFixedHeight(150)
-        self.plot_param_widget.setYRange(0,150)
+        self.plot_param_widget.setYRange(*self.yrange_param)
         self.plot_param_widget.plot(self.frames, self.num_param)
         self.plot_param_widget.plot(self.frames, self.num_param_smooth, pen='r') 
-        self.current_loc1 = self.plot_param_widget.plot([0,0], [0, 150], pen='g')
+        self.current_loc1 = self.plot_param_widget.plot([0,0], self.yrange_param, pen='g')
         self.text_item = pg.TextItem(str(self.num_param_smooth[0]), anchor=(0.5, 0.5))  # Centered text
         self.plot_param_widget.addItem(self.text_item)
-        self.text_item.setPos(10, 150) 
+        self.text_item.setPos(10, self.yrange_param[1]) 
 
         self.plot_fish_widget = pg.plot()
         self.plot_fish_widget.setFixedHeight(150)
-        self.plot_fish_widget.setYRange(-np.pi/2, np.pi/2)
+        self.plot_fish_widget.setYRange(*self.yrange_eyes)
         self.plot_fish_widget.plot(self.fish_tracking['image_index'], self.fish_tracking['left_eye_angle'], pen='b')
         self.plot_fish_widget.plot(self.fish_tracking['image_index'], self.fish_tracking['right_eye_angle'], pen='y')
-        self.current_loc2 = self.plot_fish_widget.plot([0,0], [-np.pi/2, np.pi/2], pen='g')
+        self.current_loc2 = self.plot_fish_widget.plot([0,0], self.yrange_eyes, pen='g')
         self.plot_fish_widget.setXRange(-150,150)
 
         self.plot_fish_widget_tail = pg.plot()
         self.plot_fish_widget_tail.setFixedHeight(150)
-        self.plot_fish_widget_tail.setYRange(-60, 60)
+        self.plot_fish_widget_tail.setYRange(*self.yrange_tail)
         self.plot_fish_widget_tail.plot(self.fish_tracking['image_index'], self.fish_tracking[['tail_point_037_x','tail_point_038_x','tail_point_039_x']].mean(axis=1), pen='m')
-        self.current_loc3 = self.plot_fish_widget_tail.plot([0,0], [-60, 60], pen='g')
+        self.current_loc3 = self.plot_fish_widget_tail.plot([0,0], self.yrange_tail, pen='g')
         self.plot_fish_widget_tail.setXRange(-150,150)
+
+        self.play_action = QAction("Play/Pause", self)
+        self.play_action.setShortcut("k")
+        self.play_action.triggered.connect(self.play_pause_button.toggle)
+        
+        self.rewind_action = QAction("Rewind", self)
+        self.rewind_action.setShortcut("j")
+        self.rewind_action.triggered.connect(self.rewind)
+
+        self.forward_action = QAction("Rewind", self)
+        self.forward_action.setShortcut("l")
+        self.forward_action.triggered.connect(self.forward)
+
+        self.addAction(self.play_action) 
+        self.addAction(self.rewind_action) 
+        self.addAction(self.forward_action) 
 
     def change_fps(self):
         self.play_timer.setInterval(int(1000//self.fps_spinbox.value()))
@@ -221,15 +243,15 @@ class TrackMerger(QWidget):
 
             self.current_loc1.setData(
                 [self.current_frame_index, self.current_frame_index],
-                [0,150]
+                self.yrange_param
             )
             self.current_loc2.setData(
                 [self.current_frame_index, self.current_frame_index],
-                [-np.pi/2,np.pi/2]
+                self.yrange_eyes
             )
             self.current_loc3.setData(
                 [self.current_frame_index, self.current_frame_index],
-                [-60,60]
+                self.yrange_tail
             )
             self.text_item.setText(f"{self.num_param_smooth[self.current_frame_index]:.2f}")
             self.plot_fish_widget.setXRange(self.current_frame_index-150, self.current_frame_index+150)
@@ -253,6 +275,14 @@ class TrackMerger(QWidget):
                 image = cv2.putText(image, merged_id, np.int32((x,y))+10, cv2.FONT_HERSHEY_SIMPLEX, 0.5, [255,255,255])
 
         return image
+    
+    def rewind(self):
+        target_time = max(0, self.timestamps.loc[self.current_frame_index]['time']/1000-1)
+        self.jump_to(target_time)
+
+    def forward(self):
+        target_time = min(self.max_time, self.timestamps.loc[self.current_frame_index]['time']/1000+1)
+        self.jump_to(target_time)
 
     def jump_to(self, time_sec: float):
 
@@ -262,15 +292,15 @@ class TrackMerger(QWidget):
 
         self.current_loc1.setData(
             [self.current_frame_index, self.current_frame_index],
-            [0,150]
+            self.yrange_param
         )
         self.current_loc2.setData(
             [self.current_frame_index, self.current_frame_index],
-            [-np.pi/2,np.pi/2]
+            self.yrange_eyes
         )
         self.current_loc3.setData(
             [self.current_frame_index, self.current_frame_index],
-            [-60,60]
+            self.yrange_tail
         )
         self.text_item.setText(f"{self.num_param_smooth[self.current_frame_index]:.2f}")
         self.plot_fish_widget.setXRange(self.current_frame_index-150, self.current_frame_index+150)
@@ -291,10 +321,10 @@ if __name__ == "__main__":
             '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.fish_tracking.csv'
         ],
         [
-            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish2.avi',
-            '/media/martin/DATA/Mecp2/reindexed/MeCP2-7.30Klux-Direct/2024_10_10_01.txt',
-            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish2.paramecia_tracking.csv',
-            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish2.fish_tracking.csv'
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_02_WT-7.30Klux-Direct_fish1.avi',
+            '/media/martin/DATA/Mecp2/reindexed/WT-7.30Klux-Direct/2024_10_10_02.txt',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_02_WT-7.30Klux-Direct_fish1.paramecia_tracking.csv',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_02_WT-7.30Klux-Direct_fish1.fish_tracking.csv'
         ],
     ]
 
