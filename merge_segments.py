@@ -143,7 +143,7 @@ class TrackMerger(QWidget):
 
         self.time_slider = LabeledSliderDoubleSpinBox()
         self.time_slider.setText('time (s)')
-        self.time_slider.setRange(0, self.timestamps['time'].max())
+        self.time_slider.setRange(0, self.timestamps['time'].max()/1000)
         self.time_slider.valueChanged.connect(self.jump_to)
         self.time_slider.setValue(0)
 
@@ -216,7 +216,7 @@ class TrackMerger(QWidget):
             # update slider
             time = self.timestamps[self.timestamps.index==self.current_frame_index]['time'].values[0]
             self.time_slider.blockSignals(True)
-            self.time_slider.setValue(time)
+            self.time_slider.setValue(time/1000)
             self.time_slider.blockSignals(False)
 
             self.current_loc1.setData(
