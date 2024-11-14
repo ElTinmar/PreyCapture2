@@ -19,6 +19,7 @@ import cv2
 from scipy.spatial.distance import cdist
 import networkx as nx
 import pyqtgraph as pg
+from scipy.signal import savgol_filter
 
 def count(tracking):
     
@@ -117,6 +118,7 @@ class TrackMerger(QWidget):
         self.tracking = auto_merge(self.tracking)
 
         self.frames, self.num_param = count(self.tracking)
+        self.num_param_smooth = savgol_filter(self.num_param, window_length=1800, polyorder=2)
 
         self.play_timer = QTimer()
         self.play_timer.setInterval(int(1000//self.fps))  
@@ -151,8 +153,13 @@ class TrackMerger(QWidget):
         self.plot_widget = pg.plot()
         self.plot_widget.setFixedHeight(150)
         self.plot_widget.setYRange(0,150)
+
         self.plot_widget.plot(self.frames, self.num_param)
-        self.current_loc = self.plot_widget.plot([0,0], [0, 150])
+        self.plot_widget.plot(self.frames, self.num_param_smooth, pen='r') 
+        self.current_loc = self.plot_widget.plot([0,0], [0, 150], pen='g')
+        self.text_item = pg.TextItem(str(self.num_param_smooth[0]), anchor=(0.5, 0.5))  # Centered text
+        self.plot_widget.addItem(self.text_item)
+        self.text_item.setPos(10, 150) 
 
     def change_fps(self):
         self.play_timer.setInterval(int(1000//self.fps_spinbox.value()))
@@ -175,9 +182,9 @@ class TrackMerger(QWidget):
         navigation_bar.addWidget(self.fps_spinbox)
         
         layout = QVBoxLayout(self)
+        layout.addWidget(self.plot_widget)
         layout.addWidget(self.clicker)
         layout.addLayout(navigation_bar)
-        layout.addWidget(self.plot_widget)
 
     def next_frame(self):
 
@@ -197,6 +204,7 @@ class TrackMerger(QWidget):
                 [self.current_frame_index, self.current_frame_index],
                 [0,150]
             )
+            self.text_item.setText(f"{self.num_param_smooth[self.current_frame_index]:.2f}")
 
     def overlay_tracking(self, image: NDArray) -> NDArray:
 
@@ -212,8 +220,8 @@ class TrackMerger(QWidget):
             if not np.isnan(x):
                 pos = np.int32((x,y))
                 image = cv2.circle(image, pos, radius=15, color=[0,255,0],thickness=1)
-                image = cv2.putText(image, str(int(idx)), np.int32((x,y))-10, cv2.FONT_HERSHEY_SIMPLEX, 1, [255,255,255])
-                image = cv2.putText(image, merged_id, np.int32((x,y))+10, cv2.FONT_HERSHEY_SIMPLEX, 1, [255,255,255])
+                image = cv2.putText(image, str(int(idx)), np.int32((x,y))-10, cv2.FONT_HERSHEY_SIMPLEX, 0.5, [255,255,255])
+                image = cv2.putText(image, merged_id, np.int32((x,y))+10, cv2.FONT_HERSHEY_SIMPLEX, 0.5, [255,255,255])
 
         return image
 
@@ -227,6 +235,7 @@ class TrackMerger(QWidget):
             [self.current_frame_index, self.current_frame_index],
             [0,150]
         )
+        self.text_item.setText(f"{self.num_param_smooth[self.current_frame_index]:.2f}")
 
         rval, image = self.video_reader.next_frame()
         if rval:
