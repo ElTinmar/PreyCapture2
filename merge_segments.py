@@ -175,7 +175,7 @@ class TrackMerger(QWidget):
         self.plot_fish_widget_tail.setFixedHeight(150)
         self.plot_fish_widget_tail.setYRange(-60, 60)
         self.plot_fish_widget_tail.plot(self.fish_tracking['image_index'], self.fish_tracking[['tail_point_037_x','tail_point_038_x','tail_point_039_x']].mean(axis=1), pen='m')
-        self.current_loc3 = self.plot_fish_widget.plot([0,0], [-60, 60], pen='g')
+        self.current_loc3 = self.plot_fish_widget_tail.plot([0,0], [-60, 60], pen='g')
         self.plot_fish_widget_tail.setXRange(-150,150)
 
     def change_fps(self):
