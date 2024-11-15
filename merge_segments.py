@@ -6,7 +6,9 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QPushButton,
-    QAction
+    QAction,
+    QTreeWidget,
+    QTreeWidgetItem
 )
 from PyQt5.QtCore import pyqtSignal, QTimer
 from qt_widgets import LabeledSliderDoubleSpinBox, LabeledDoubleSpinBox
@@ -59,7 +61,7 @@ def auto_merge(tracking):
     G.add_edges_from(edges)
     G.add_nodes_from(idx[~valid])
     
-    merge = {f'M{n}' : sorted(component) for n, component in enumerate(nx.connected_components(G))}
+    merge = {f'M{n:05d}' : sorted(component) for n, component in enumerate(nx.connected_components(G))}
     reversed_dict = {}
     for key, values in merge.items():
         for value in values:
@@ -70,6 +72,8 @@ def auto_merge(tracking):
 
     return tracking
 
+
+# TODO add merging paramecias together 
 class ParameciaClicker(ImageViewer):
 
     clicked = pyqtSignal(int, int)
@@ -109,6 +113,8 @@ class TrackMerger(QWidget):
         self.current_frame_index = 0
         self.trajectories = {}
         self.merge = {}
+        self.selected_merged = []
+        self.selected_original = []
 
         self.video_reader = OpenCV_VideoReader()
         self.video_reader.open_file(
@@ -184,6 +190,20 @@ class TrackMerger(QWidget):
         self.current_loc3 = self.plot_fish_widget_tail.plot([0,0], self.yrange_tail, pen='g')
         self.plot_fish_widget_tail.setXRange(-150,150)
 
+        self.split_button = QPushButton('Split')
+
+        self.merge_button = QPushButton('Merge')
+
+        self.merge_widget = QTreeWidget()
+        self.merge_widget.setSelectionMode(QTreeWidget.ExtendedSelection)
+        self.merge_widget.setColumnCount(2)
+        self.merge_widget.setHeaderLabels(['Merged ID', 'Original ID'])
+        for merged_id, data in self.param_tracking.groupby('merged'):
+            merged_item = QTreeWidgetItem(self.merge_widget, [str(merged_id), ''])
+            for original_id in data['index'].unique():
+                QTreeWidgetItem(merged_item, ['', str(original_id)])
+        self.merge_widget.itemSelectionChanged.connect(self.merge_selection_changed)
+
         self.play_action = QAction("Play/Pause", self)
         self.play_action.setShortcut("k")
         self.play_action.triggered.connect(self.play_pause_button.toggle)
@@ -213,6 +233,18 @@ class TrackMerger(QWidget):
             self.play_pause_button.setStyleSheet("background-color : lightgrey")
             self.play_timer.stop()
 
+    def merge_selection_changed(self):
+        self.selected_merged = []
+        self.selected_original = []
+        selected_items = self.merge_widget.selectedItems()
+        for item in selected_items:
+            if item.parent() is None:
+                merged_id = item.text(0)
+                self.selected_merged.append(merged_id)
+            else:
+                original_id = int(item.text(1))
+                self.selected_original.append(original_id)
+
     def layout_components(self):
 
         navigation_bar = QHBoxLayout()
@@ -220,13 +252,25 @@ class TrackMerger(QWidget):
         navigation_bar.addWidget(self.time_slider)
         navigation_bar.addWidget(self.fps_spinbox)
         
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.plot_param_widget)
-        layout.addWidget(self.plot_fish_widget)
-        layout.addWidget(self.plot_fish_widget_tail)
-        layout.addWidget(self.clicker)
-        layout.addLayout(navigation_bar)
+        layout_plots = QVBoxLayout()
+        layout_plots.addWidget(self.plot_param_widget)
+        layout_plots.addWidget(self.plot_fish_widget)
+        layout_plots.addWidget(self.plot_fish_widget_tail)
+        layout_plots.addWidget(self.clicker)
+        layout_plots.addLayout(navigation_bar)
 
+        layout_controls = QHBoxLayout()
+        layout_controls.addWidget(self.split_button)
+        layout_controls.addWidget(self.merge_button)
+
+        layout_tree = QVBoxLayout()
+        layout_tree.addLayout(layout_controls)
+        layout_tree.addWidget(self.merge_widget)
+        
+        layout = QHBoxLayout(self)
+        layout.addLayout(layout_plots)
+        layout.addLayout(layout_tree)
+        
     def next_frame(self):
 
         rval, image = self.video_reader.next_frame()
@@ -270,7 +314,14 @@ class TrackMerger(QWidget):
         for frame, idx, merged_id, x, y in z:
             if not np.isnan(x):
                 pos = np.int32((x,y))
-                image = cv2.circle(image, pos, radius=15, color=[0,255,0],thickness=1)
+                
+                col = [0,255,0]
+                if idx in self.selected_original:
+                    col = [255,0,0]
+                if merged_id in self.selected_merged:
+                    col = [0,0,255]
+
+                image = cv2.circle(image, pos, radius=15, color=col,thickness=1)
                 image = cv2.putText(image, str(int(idx)), np.int32((x,y))-10, cv2.FONT_HERSHEY_SIMPLEX, 0.5, [255,255,255])
                 image = cv2.putText(image, merged_id, np.int32((x,y))+10, cv2.FONT_HERSHEY_SIMPLEX, 0.5, [255,255,255])
 
