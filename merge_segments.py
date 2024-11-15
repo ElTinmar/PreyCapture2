@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem
 )
-from PyQt5.QtCore import pyqtSignal, QTimer
+from PyQt5.QtCore import pyqtSignal, QTimer, Qt
 from qt_widgets import LabeledSliderDoubleSpinBox, LabeledDoubleSpinBox
 from pathlib import Path
 from video_tools import OpenCV_VideoReader
@@ -76,7 +76,7 @@ def auto_merge(tracking):
 # TODO add merging paramecias together 
 class ParameciaClicker(ImageViewer):
 
-    clicked = pyqtSignal(int, int)
+    clicked = pyqtSignal(float, float)
 
     def __init__(self, image: NDArray, *args, **kwargs) -> None:
 
@@ -87,7 +87,7 @@ class ParameciaClicker(ImageViewer):
 
         widget_pos = event.pos()
         scene_pos = self.mapToScene(widget_pos)
-        self.clicked.emit(scene_pos.x, scene_pos.y)
+        self.clicked.emit(scene_pos.x(), scene_pos.y())
 
 class TrackMerger(QWidget):
 
@@ -146,6 +146,7 @@ class TrackMerger(QWidget):
     def create_components(self):
 
         self.clicker = ParameciaClicker(image=np.zeros((self.height, self.width)))
+        self.clicker.clicked.connect(self.get_closest_param)
 
         self.play_pause_button = QPushButton()
         self.play_pause_button.setStyleSheet("background-color : lightgrey")
@@ -233,9 +234,20 @@ class TrackMerger(QWidget):
             self.play_pause_button.setStyleSheet("background-color : lightgrey")
             self.play_timer.stop()
 
+    def get_closest_param(self, x: float, y: float):
+        data = self.param_tracking[self.param_tracking['frame']==self.current_frame_index]
+        dist = np.sqrt((data['x'] - x)**2 + (data['y'] - y)**2)
+        original_id = data.iloc[dist.argmin()]['index']
+        merged_id = data.iloc[dist.argmin()]['merged']
+        matching_items = self.merge_widget.findItems(merged_id, Qt.MatchExactly, column=0)
+        if matching_items:
+            self.merge_widget.setCurrentItem(matching_items[0])
+
     def merge_selection_changed(self):
+
         self.selected_merged = []
         self.selected_original = []
+
         selected_items = self.merge_widget.selectedItems()
         for item in selected_items:
             if item.parent() is None:
@@ -244,6 +256,9 @@ class TrackMerger(QWidget):
             else:
                 original_id = int(item.text(1))
                 self.selected_original.append(original_id)
+
+        target_time = self.timestamps.loc[self.current_frame_index]['time']/1000
+        self.jump_to(target_time)
 
     def layout_components(self):
 
