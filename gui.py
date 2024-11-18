@@ -19,7 +19,7 @@ from numpy.typing import NDArray
 import cv2
 import pyqtgraph as pg
 from scipy.signal import savgol_filter
-from merge_tracking_segments import auto_merge, count
+from merge_tracking_segments import count
 
 # TODO add merging paramecias together 
 class ParameciaClicker(ImageViewer):
@@ -75,7 +75,6 @@ class TrackMerger(QWidget):
 
         self.timestamps = pd.read_csv(timestampfile, delim_whitespace=True, header=None,  names=['index', 'time', 'frame_num'], index_col=0)
         self.param_tracking = pd.read_csv(param_tracking)
-        self.param_tracking = auto_merge(self.param_tracking)
 
         self.fish_tracking = pd.read_csv(fish_tracking)
 
@@ -331,13 +330,13 @@ if __name__ == "__main__":
         [
             '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.avi',
             '/media/martin/DATA/Mecp2/reindexed/MeCP2-7.30Klux-Direct/2024_10_10_01.txt',
-            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.paramecia_tracking.csv',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.paramecia_tracking_merged.csv',
             '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.fish_tracking.csv'
         ],
         [
             '/media/martin/DATA/Mecp2/processed/2024_10_10_02_WT-7.30Klux-Direct_fish1.avi',
             '/media/martin/DATA/Mecp2/reindexed/WT-7.30Klux-Direct/2024_10_10_02.txt',
-            '/media/martin/DATA/Mecp2/processed/2024_10_10_02_WT-7.30Klux-Direct_fish1.paramecia_tracking.csv',
+            '/media/martin/DATA/Mecp2/processed/2024_10_10_02_WT-7.30Klux-Direct_fish1.paramecia_tracking_merged.csv',
             '/media/martin/DATA/Mecp2/processed/2024_10_10_02_WT-7.30Klux-Direct_fish1.fish_tracking.csv'
         ],
     ]
