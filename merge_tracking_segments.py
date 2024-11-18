@@ -43,11 +43,12 @@ def auto_merge(p: Path, out_suffix: str = '_merged', threshold: float = 40) -> N
     invalid_mask = segment_start[:, 0][:, None] <= segment_stop[:, 0][None, :]
     cost[invalid_mask] = 10_000 # np.inf does not work. Using a big number instead
 
+    # use Hungarian algorithm to a find one-to-one mapping between segments
     row_idx, col_idx = linear_sum_assignment(cost)
     valid = cost[row_idx, col_idx] <= threshold
     row_idx, col_idx = row_idx[valid], col_idx[valid]
 
-    # find connected components in a graph
+    # create graph and find connected components
     edges = np.column_stack((idx[row_idx], idx[col_idx]))
     G = nx.Graph()
     G.add_nodes_from(idx[~valid])
