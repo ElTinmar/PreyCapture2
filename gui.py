@@ -351,6 +351,11 @@ class TrackMerger(QWidget):
         self.video_reader.seek_to(index)
         self.current_frame_index = index
 
+        # update slider
+        self.time_slider.blockSignals(True)
+        self.time_slider.setValue(time_sec)
+        self.time_slider.blockSignals(False)
+
         self.current_loc1.setData(
             [self.current_frame_index, self.current_frame_index],
             self.yrange_param
