@@ -23,6 +23,7 @@ from scipy.spatial.distance import cdist
 import networkx as nx
 import pyqtgraph as pg
 from scipy.signal import savgol_filter
+from scipy.optimize import linear_sum_assignment
 
 def count(tracking):
     
@@ -33,7 +34,7 @@ def count(tracking):
         param_number.append(data.shape[0])
     return frame, param_number
 
-def auto_merge(tracking):
+def auto_merge(tracking, threshold: float = 40):
     # TODO: two paramecia can get the same merged index
 
     # extract trajectories per idx
@@ -45,21 +46,27 @@ def auto_merge(tracking):
     idx = np.array([], int)
     segment_start = np.zeros((0,3), np.float32)
     segment_stop = np.zeros((0,3), np.float32)
-    for key, val in trajectories.items():
-        idx = np.hstack((idx, key))
-        segment_start = np.vstack((segment_start, val[0,:] / [20,1,1]))
-        segment_stop = np.vstack((segment_stop, val[-1,:] / [20,1,1]))
+    for original_id, position in trajectories.items():
+        idx = np.hstack((idx, original_id))
+        segment_start = np.vstack((segment_start, position[0,:] / [20,1,1]))
+        segment_stop = np.vstack((segment_stop, position[-1,:] / [20,1,1]))
 
     # compute cost matrix and find connections between segment stop and start
-    cost = cdist(segment_stop, segment_start)
-    np.fill_diagonal(cost, np.inf)
-    argmin = cost.argmin(axis=1)
-    mincost = cost.min(axis=1)
-    valid = (mincost <= 40) & (segment_start[argmin,0] > segment_stop[:,0])
-    edges = np.vstack((idx[valid], idx[argmin[valid]])).T
+    cost = cdist(segment_start, segment_stop)
+
+    # use numpy broadcasting to remove overlapping segments
+    invalid_mask = segment_start[:, 0][:, None] <= segment_stop[:, 0][None, :]
+    cost[invalid_mask] = 10_000
+
+    row_idx, col_idx = linear_sum_assignment(cost)
+    valid = cost[row_idx, col_idx] <= threshold
+    row_idx, col_idx = row_idx[valid], col_idx[valid]
+
+    # find connected components in a graph
+    edges = np.column_stack((idx[row_idx], idx[col_idx]))
     G = nx.Graph()
-    G.add_edges_from(edges)
     G.add_nodes_from(idx[~valid])
+    G.add_edges_from(edges)
     
     merge = {f'M{n:05d}' : sorted(component) for n, component in enumerate(nx.connected_components(G))}
     reversed_dict = {}
