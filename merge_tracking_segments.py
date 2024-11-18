@@ -63,7 +63,7 @@ def auto_merge(p: Path, out_suffix: str = '_merged', threshold: float = 40) -> N
     new_column = [reversed_dict[idx] for idx in tracking['index']]
     tracking['merged'] = new_column
 
-    out = p.parent / (p.stem + out_suffix + p.out_suffix)
+    out = p.parent / (p.stem + out_suffix + p.suffix)
     tracking.to_csv(out)
 
 if __name__ == '__main__':
