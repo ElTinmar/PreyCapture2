@@ -57,7 +57,7 @@ def auto_merge(tracking, threshold: float = 40):
 
     # use numpy broadcasting to remove overlapping segments
     invalid_mask = segment_start[:, 0][:, None] <= segment_stop[:, 0][None, :]
-    cost[invalid_mask] = 10_000
+    cost[invalid_mask] = 10_000 # np.inf does not work. Using a big number instead
 
     row_idx, col_idx = linear_sum_assignment(cost)
     valid = cost[row_idx, col_idx] <= threshold
