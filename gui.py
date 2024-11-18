@@ -1,5 +1,3 @@
-# Merge segments from Hungarian tracking
-
 from PyQt5.QtWidgets import (
     QWidget, 
     QApplication,
@@ -19,67 +17,9 @@ import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
 import cv2
-from scipy.spatial.distance import cdist
-import networkx as nx
 import pyqtgraph as pg
 from scipy.signal import savgol_filter
-from scipy.optimize import linear_sum_assignment
-
-def count(tracking):
-    
-    param_number = []
-    frame = []
-    for group, data in tracking.groupby('frame'):
-        frame.append(group)
-        param_number.append(data.shape[0])
-    return frame, param_number
-
-# TODO: put this in a separate file and parallel process files
-def auto_merge(tracking, threshold: float = 40):
-    # TODO: two paramecia can get the same merged index
-
-    # extract trajectories per idx
-    trajectories = {}
-    for group, data in tracking.groupby('index'):
-        trajectories[group] = data[['frame', 'x', 'y']].to_numpy()
-
-    # get segment start and stop points
-    idx = np.array([], int)
-    segment_start = np.zeros((0,3), np.float32)
-    segment_stop = np.zeros((0,3), np.float32)
-    for original_id, position in trajectories.items():
-        idx = np.hstack((idx, original_id))
-        segment_start = np.vstack((segment_start, position[0,:] / [20,1,1]))
-        segment_stop = np.vstack((segment_stop, position[-1,:] / [20,1,1]))
-
-    # compute cost matrix and find connections between segment stop and start
-    cost = cdist(segment_start, segment_stop)
-
-    # use numpy broadcasting to remove overlapping segments
-    invalid_mask = segment_start[:, 0][:, None] <= segment_stop[:, 0][None, :]
-    cost[invalid_mask] = 10_000 # np.inf does not work. Using a big number instead
-
-    row_idx, col_idx = linear_sum_assignment(cost)
-    valid = cost[row_idx, col_idx] <= threshold
-    row_idx, col_idx = row_idx[valid], col_idx[valid]
-
-    # find connected components in a graph
-    edges = np.column_stack((idx[row_idx], idx[col_idx]))
-    G = nx.Graph()
-    G.add_nodes_from(idx[~valid])
-    G.add_edges_from(edges)
-    
-    merge = {f'M{n:05d}' : sorted(component) for n, component in enumerate(nx.connected_components(G))}
-    reversed_dict = {}
-    for key, values in merge.items():
-        for value in values:
-            reversed_dict[value] = key 
-
-    new_column = [reversed_dict[idx] for idx in tracking['index']]
-    tracking['merged'] = new_column
-
-    return tracking
-
+from merge_tracking_segments import auto_merge, count
 
 # TODO add merging paramecias together 
 class ParameciaClicker(ImageViewer):
