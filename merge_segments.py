@@ -34,6 +34,7 @@ def count(tracking):
         param_number.append(data.shape[0])
     return frame, param_number
 
+# TODO: put this in a separate file and parallel process files
 def auto_merge(tracking, threshold: float = 40):
     # TODO: two paramecia can get the same merged index
 
