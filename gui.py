@@ -142,6 +142,12 @@ class TrackMerger(QWidget):
 
         self.merge_button = QPushButton('Merge')
 
+        self.sel_start_button = QPushButton('Start')
+        self.sel_start_button.clicked.connect(self.selection_start)
+        
+        self.sel_stop_button = QPushButton('Stop')
+        self.sel_stop_button.clicked.connect(self.selection_stop)
+
         self.merge_widget = QTreeWidget()
         self.merge_widget.setSelectionMode(QTreeWidget.ExtendedSelection)
         self.merge_widget.setColumnCount(2)
@@ -190,6 +196,43 @@ class TrackMerger(QWidget):
         if matching_items:
             self.merge_widget.setCurrentItem(matching_items[0])
 
+    # TODO remove code duplication
+    def selection_start(self):
+
+        start_frames = []
+
+        selected_items = self.merge_widget.selectedItems()
+        for item in selected_items:
+            if item.parent() is None:
+                merged_id = item.text(0)
+                start_frames.append(self.param_tracking[self.param_tracking['merged']==merged_id]['frame'].min())
+            else:
+                original_id = int(item.text(1))
+                self.selected_original.append(original_id)
+                start_frames.append(self.param_tracking[self.param_tracking['index']==original_id]['frame'].min())
+
+        frame = min(start_frames)
+        target_time = self.timestamps.loc[frame]['time']/1000
+        self.jump_to(target_time)
+
+    def selection_stop(self):
+
+        stop_frames = []
+
+        selected_items = self.merge_widget.selectedItems()
+        for item in selected_items:
+            if item.parent() is None:
+                merged_id = item.text(0)
+                stop_frames.append(self.param_tracking[self.param_tracking['merged']==merged_id]['frame'].max())
+            else:
+                original_id = int(item.text(1))
+                self.selected_original.append(original_id)
+                stop_frames.append(self.param_tracking[self.param_tracking['index']==original_id]['frame'].max())
+
+        frame = max(stop_frames)
+        target_time = self.timestamps.loc[frame]['time']/1000
+        self.jump_to(target_time)
+
     def merge_selection_changed(self):
 
         self.selected_merged = []
@@ -225,9 +268,14 @@ class TrackMerger(QWidget):
         layout_controls.addWidget(self.split_button)
         layout_controls.addWidget(self.merge_button)
 
+        layout_controls_bottom = QHBoxLayout()
+        layout_controls_bottom.addWidget(self.sel_start_button)
+        layout_controls_bottom.addWidget(self.sel_stop_button)
+
         layout_tree = QVBoxLayout()
         layout_tree.addLayout(layout_controls)
         layout_tree.addWidget(self.merge_widget)
+        layout_tree.addLayout(layout_controls_bottom)
         
         layout = QHBoxLayout(self)
         layout.addLayout(layout_plots)
