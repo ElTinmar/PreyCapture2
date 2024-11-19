@@ -379,6 +379,8 @@ class TrackMerger(QWidget):
 
 if __name__ == "__main__":
 
+    # TODO load and save data from the gui  
+    
     data = [
         [
             '/media/martin/DATA/Mecp2/processed/2024_10_10_01_MeCP2-7.30Klux-Direct_fish1.avi',
