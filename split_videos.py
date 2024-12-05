@@ -28,18 +28,20 @@ def split(p):
             dest_folder = resultfolder
         )
 
-        split_processor = CPU_VideoProcessor(resultfolder / (p.stem + '_' + suffix + '.avi'))
-        split_processor.split_frame(            
-            n = n_chunks,
-            suffix = 'chunk',
-            dest_folder = resultfolder
-        )
+        # split_processor = CPU_VideoProcessor(resultfolder / (p.stem + '_' + suffix + '.avi'))
+        # split_processor.split_frame(            
+        #     n = n_chunks,
+        #     suffix = 'chunk',
+        #     dest_folder = resultfolder
+        # )
 
-filters = ['7.30Klux']
-files = [
-    p for p in cleandatafolder.rglob("*.avi") 
-    if any(s for s in filters if s in str(p.resolve()))
-]
+# filters = ['7.30Klux']
+# files = [
+#     p for p in cleandatafolder.rglob("*.avi") 
+#     if any(s for s in filters if s in str(p.resolve()))
+# ]
+
+files = [p for p in cleandatafolder.rglob("*.avi")]
 
 with Pool(n_cores) as pool:
     pool.map(split, files)
