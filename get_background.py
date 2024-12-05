@@ -71,4 +71,5 @@ process = partial(
 if __name__ == '__main__':
 
     with Pool(n_cores) as pool:
-        pool.map(process, resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"))
+        #pool.map(process, resultfolder.rglob("*fish[1-2]_chunk_[0-9][0-9][0-9].avi"))
+        pool.map(process, resultfolder.rglob("*fish[1-2].avi"))
