@@ -11,4 +11,5 @@ python get_background.py
 python track_videos.py
 python track_paramecia.py
 python merge_data.py
+python merge_tracking_segments.py
 ```
