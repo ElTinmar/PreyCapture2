@@ -15,4 +15,4 @@ display = False
 export_GPU = False
 n_chunks = 5
 n_background_samples = 50
-n_cores = 2
+n_cores = 1
