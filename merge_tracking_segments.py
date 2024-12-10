@@ -68,7 +68,8 @@ def auto_merge(p: Path, out_suffix: str = '_merged', threshold: float = 40) -> N
 
 if __name__ == '__main__':
 
-    files = resultfolder.rglob("*.paramecia_tracking.csv")
+    #files = resultfolder.rglob("*.paramecia_tracking.csv")
+    files = resultfolder.rglob("*.paramecia.csv")
 
     with Pool(n_cores) as pool:
         pool.map(auto_merge, files)
