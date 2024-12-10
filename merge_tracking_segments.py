@@ -18,6 +18,11 @@ def count(tracking):
 
 def auto_merge(p: Path, out_suffix: str = '_merged', threshold: float = 40) -> None:
     
+    out = p.parent / (p.stem + out_suffix + p.suffix)
+    if out.exists():
+        print(f'{out} already exists, ignoring')
+        return
+
     print(p)
 
     tracking = pd.read_csv(p)
