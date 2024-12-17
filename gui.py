@@ -21,6 +21,24 @@ import pyqtgraph as pg
 from scipy.signal import savgol_filter
 from merge_tracking_segments import count
 from config import cleandatafolder, resultfolder
+from dataclasses import dataclass, field
+
+@dataclass
+class PreyCaptureData:
+    data: dict = field(default_factory=lambda: {'start': [], 'stop': [], 'success': []})
+
+    def add_event(self, start_frame, stop_frame, success: bool):
+        self.data['start'].append(start_frame)
+        self.data['stop'].append(stop_frame)
+        self.data['success'].append(success)
+    
+    def __iter__(self):
+        for start, stop, success in zip(self.data['start'], self.data['stop'], self.data['success']):
+            yield (start, stop, success)
+    
+    def to_csv(self, filename):
+        df = pd.DataFrame(self.data)
+        df.to_csv(filename, index=False)
 
 # TODO add merging paramecias together 
 class ParameciaClicker(ImageViewer):
@@ -64,6 +82,8 @@ class TrackMerger(QWidget):
         self.merge = {}
         self.selected_merged = []
         self.selected_original = []
+        self.pc_data = PreyCaptureData()
+        self.current_pc_event_start_frame = None
 
         self.video_reader = OpenCV_VideoReader()
         self.video_reader.open_file(
@@ -73,6 +93,7 @@ class TrackMerger(QWidget):
         self.height = self.video_reader.get_height()
         self.width = self.video_reader.get_width()
         self.fps = self.video_reader.get_fps()
+        self.num_frames = self.video_reader.get_number_of_frame()
 
         self.timestamps = pd.read_csv(timestampfile, delim_whitespace=True, header=None,  names=['index', 'time', 'frame_num'], index_col=0)
         self.param_tracking = pd.read_csv(param_tracking)
@@ -167,13 +188,64 @@ class TrackMerger(QWidget):
         self.rewind_action.setShortcut("j")
         self.rewind_action.triggered.connect(self.rewind)
 
-        self.forward_action = QAction("Rewind", self)
+        self.forward_action = QAction("Forward", self)
         self.forward_action.setShortcut("l")
         self.forward_action.triggered.connect(self.forward)
 
+        self.pc_start_action = QAction("PC start", self)
+        self.pc_start_action.setShortcut("1")
+        self.pc_start_action.triggered.connect(self.pc_start)
+
+        self.pc_stop_abort_action = QAction("PC stop abort", self)
+        self.pc_stop_abort_action.setShortcut("2")
+        self.pc_stop_abort_action.triggered.connect(self.pc_stop_abort)
+
+        self.pc_stop_success_action = QAction("PC stop success", self)
+        self.pc_stop_success_action.setShortcut("3")
+        self.pc_stop_success_action.triggered.connect(self.pc_stop_success)
+
+        self.pc_del_action = QAction("PC del", self)
+        self.pc_del_action.setShortcut(".")
+        self.pc_del_action.triggered.connect(self.pc_del)
+
         self.addAction(self.play_action) 
         self.addAction(self.rewind_action) 
-        self.addAction(self.forward_action) 
+        self.addAction(self.forward_action)
+        self.addAction(self.pc_start_action)
+        self.addAction(self.pc_stop_abort_action) 
+        self.addAction(self.pc_stop_success_action) 
+        self.addAction(self.pc_del_action) 
+
+    def pc_start(self):
+        self.current_pc_event_start_frame = self.current_frame_index
+
+    def pc_stop_abort(self):
+
+        if self.current_pc_event_start_frame is None:
+            return
+        
+        # update data
+        self.pc_data.add_event(self.current_pc_event_start_frame, self.current_frame_index, False)
+
+        # clear pc start
+        self.current_pc_event_start_frame = None
+
+    def pc_stop_success(self):
+
+        if self.current_pc_event_start_frame is None:
+            return
+        
+        # update data
+        self.pc_data.add_event(self.current_pc_event_start_frame, self.current_frame_index, True)
+        
+        # clear pc start
+        self.current_pc_event_start_frame = None
+
+    def pc_del(self):
+        # clear pc start
+        self.current_pc_event_start_frame = None
+
+        # TODO delete
 
     def change_fps(self):
         self.play_timer.setInterval(int(1000//self.fps_spinbox.value()))
@@ -259,7 +331,6 @@ class TrackMerger(QWidget):
         navigation_bar.addWidget(self.fps_spinbox)
         
         layout_plots = QVBoxLayout()
-        layout_plots.addWidget(self.plot_param_widget)
         layout_plots.addWidget(self.plot_fish_widget)
         layout_plots.addWidget(self.plot_fish_widget_tail)
         layout_plots.addWidget(self.clicker)
@@ -274,6 +345,7 @@ class TrackMerger(QWidget):
         layout_controls_bottom.addWidget(self.sel_stop_button)
 
         layout_tree = QVBoxLayout()
+        layout_tree.addWidget(self.plot_param_widget)
         layout_tree.addLayout(layout_controls)
         layout_tree.addWidget(self.merge_widget)
         layout_tree.addLayout(layout_controls_bottom)
