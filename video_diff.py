@@ -6,10 +6,7 @@ from image_tools import im2single, im2gray, im2uint8, enhance
 import numpy as np
 
 # Installation:
-#   pip install numpy
-#   pip install tqdm 
 #   pip install git+https://github.com/ElTinmar/video_tools.git@main
-#   pip install git+https://github.com/ElTinmar/image_tools.git@main
  
 datafolder = Path('/media/martin/MARTIN_8TB_0/Work/Sumbre_New/Mecp2/reindexed')
 n_cores = 1
