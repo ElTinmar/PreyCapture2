@@ -55,7 +55,7 @@ def create_diff_video(p, video_writer_constructor: VideoWriter = FFMPEG_VideoWri
             contrast = 3.0,
             gamma = 0.75,
             brightness = 0.0, 
-            blur_size_px = 5, 
+            blur_size_px = None, 
             medfilt_size_px = None
         )
 
